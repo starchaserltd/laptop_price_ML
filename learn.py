@@ -12,8 +12,14 @@ import numpy as np  # type: ignore
 
 from pandas import (  # type: ignore
     DataFrame,
-    read_csv, 
+    read_csv,
 )
+
+from scipy.stats import describe
+
+from sklearn.ensemble import AdaBoostRegressor
+
+from sklearn.tree import DecisionTreeRegressor
 
 from sklearn.kernel_ridge import KernelRidge
 
@@ -23,6 +29,8 @@ from sklearn.preprocessing import (
     StandardScaler,
     PolynomialFeatures,
 )
+
+from sklearn.svm import SVR
 
 
 def load_data() -> DataFrame:
@@ -60,24 +68,41 @@ def evaluate_fold(classifier, data: DataFrame, i: int, verbose: int=0) -> float:
     # Predict
     tr_preds = classifier.predict(tr_data)
     te_preds = classifier.predict(te_data)
-    if verbose == 0:
-        print('\n'.join('{:10d} {:10.2f} {:10.2f} {:10.2f}'.format(i, t, p, rel_error(t, p))
-                        for i, t, p in zip(np.array(te_data.id), te_data.realprice, te_preds)))
+    if verbose:
+        print_predictions(tr_data, tr_preds, verbose - 1)
+        print_predictions(te_data, te_preds, verbose - 1)
+        print_feature_importance(classifier)
     tr_error = mean_rel_error(tr_data.realprice, tr_preds)
     te_error = mean_rel_error(te_data.realprice, te_preds)
     return tr_error, te_error
 
 
-def evaluate(classifier, data: DataFrame):
-    return zip(*[evaluate_fold(classifier, data, i) for i in range(10)])
+def evaluate(classifier, data: DataFrame, verbose: int=0):
+    return zip(*[evaluate_fold(classifier, data, i, verbose) for i in range(10)])
+
+
+def print_feature_importance(classifier):
+    feat_imp = zip(classifier.feature_names_, classifier.estimator_.feature_importances_)
+    feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
+    for feat, imp in feat_imp:
+        print('{:18s} {:.3f}'.format(feat, imp))
+
+
+def print_predictions(data, preds, verbose):
+    errors = [rel_error(t, p) for t, p in zip(data.realprice, preds)]
+    print(describe(errors))
+    if verbose:
+        print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:10.2f}'.format(i, j, t, p, e)
+            for i, (j, t, p, e) in enumerate(zip(np.array(data.id), data.realprice, preds, errors))
+            if e > 100))
 
 
 def print_results(results: List[float]):
-    print('{:.2f} ± {:.2f}'.format(
+    print('{:5.2f} ± {:.2f}'.format(
         np.mean(results),
         np.std(results) / len(results)), end=' | ')
     for r in results:
-        print('{:.1f}'.format(r), end=' ') 
+        print('{:4.1f}'.format(r), end=' ')
     print()
 
 
@@ -111,10 +136,15 @@ class SilviuNumericFeaturesPredictor:
             "WAR_rating",
             "WNET_rating",
         ]
-        self.estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
-        # self.estimator_ = KernelRidge(alpha=1, kernel='polynomial', degree=4)
+        # self.estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
+        # self.estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
+        # self.estimator_ = KernelRidge(alpha=0.1, kernel='polynomial', degree=3)
+        self.estimator_ = AdaBoostRegressor(DecisionTreeRegressor(max_depth=16), n_estimators=200, loss='linear')
         self.scaler_ = StandardScaler()
         # self.poly_ = PolynomialFeatures()
+
+    def _select_features(self, data_frame):
+        return np.array(data_frame[self.feature_names_])
 
     def fit(self, data_frame):
         X = np.array(data_frame[self.feature_names_])
@@ -135,7 +165,7 @@ def main():
     # classifier = DBPricePredictor()
     classifier = SilviuNumericFeaturesPredictor()
     data = load_data()
-    tr_errors, te_errors = evaluate(classifier, data)
+    tr_errors, te_errors = evaluate(classifier, data, 2)
 
     print('Tr:', end=' ')
     print_results(tr_errors)
