@@ -30,6 +30,7 @@ from sklearn.linear_model import (
 
 from sklearn.preprocessing import (
     StandardScaler,
+    OneHotEncoder,
     PolynomialFeatures,
 )
 
@@ -188,26 +189,48 @@ class AdditivePricesEsimator:
 
     def __init__(self):
         self.feature_names_ = FEATURE_NAMES['prices']
-        self.estimator_ = Ridge(alpha=5000000)
+        self.estimator_ = Ridge(alpha=100)
+        self.one_hot_encoder_ = OneHotEncoder(n_values=12, sparse=False)
+        self.models_ = [
+            "Acer",
+            "Apple",
+            "Asus",
+            "Clevo",
+            "Dell",
+            "Fujitsu",
+            "Gigabyte",
+            "HP",
+            "Lenovo",
+            "MSI",
+            "Razer",
+            "Samsung",
+        ]
+        self.model_to_id_ = {m: i for i, m in enumerate(self.models_)}
 
-    def _select_features(self, data_frame):
+    def _select_features(self, data_frame, stage):
         ratings = np.array(data_frame[["MDB_rating", "CHASSIS_rating"]])
+        models = [self.model_to_id_[m] for m in data_frame["model_prod"]]
+        models = np.atleast_2d(models).T
+        if stage == 'train':
+            self.one_hot_encoder_.fit(models)
+        models = self.one_hot_encoder_.transform(models)
         return np.hstack([
             np.array(data_frame[self.feature_names_]),
             ratings,
             ratings ** 2,
+            models,
         ])
 
     def _select_targets(self, data_frame):
         return np.array(data_frame.realprice).astype(np.float)
 
     def fit(self, data_frame):
-        X = self._select_features(data_frame)
+        X = self._select_features(data_frame, 'train')
         y = self._select_targets(data_frame)
         return self.estimator_.fit(X, y)
 
     def predict(self, data_frame):
-        X = self._select_features(data_frame)
+        X = self._select_features(data_frame, 'test')
         return self.estimator_.predict(X)
 
     def print_feature_importance(self):
@@ -216,7 +239,8 @@ class AdditivePricesEsimator:
             [
                 "MDB_rating", "CHASSIS_rating",
                 "MDB_rating ** 2", "CHASSIS_rating ** 2",
-            ]
+            ] +
+            self.models_
         )
         assert len(feature_names_) == len(self.estimator_.coef_)
         feat_imp = zip(feature_names_, self.estimator_.coef_)
