@@ -106,6 +106,42 @@ def print_results(results: List[float]):
     print()
 
 
+FEATURE_NAMES = {
+    'numeric.1': [
+        "CPU_rating",
+        "CPU_tdp",
+        "GPU_rating",
+        "GPU_power",
+        "ACUM_rating",
+        "CHASSIS_thic",
+        "CHASSIS_weight",
+        "CHASSIS_rating",
+        "DISPLAY_rating",
+        "HDD_rating",
+        "MDB_rating",
+        "MEM_rating",
+        "ODD_price",
+        "SIST_price",
+        "WAR_rating",
+        "WNET_rating",
+    ],
+    'prices': [
+        "CPU_price",
+        "GPU_price",
+        "ACUM_price",
+        "DISPLAY_price",
+        "HDD_price",
+        "MEM_price",
+        "ODD_price",
+        "SIST_price",
+        "WAR_price",
+        "WNET_price",
+        "CHASSIS_rating",
+        "MDB_rating",
+    ],
+}
+
+
 class DBPricePredictor:
 
     def fit(self, data_frame: DataFrame):
@@ -115,31 +151,16 @@ class DBPricePredictor:
         return data_frame.price
 
 
-class SilviuNumericFeaturesPredictor:
+class SklearnEstimator:
 
-    def __init__(self):
-        self.feature_names_ = [
-            "CPU_rating",
-            "CPU_tdp",
-            "GPU_rating",
-            "GPU_power",
-            "ACUM_rating",
-            "CHASSIS_thic",
-            "CHASSIS_weight",
-            "CHASSIS_rating",
-            "DISPLAY_rating",
-            "HDD_rating",
-            "MDB_rating",
-            "MEM_rating",
-            "ODD_price",
-            "SIST_price",
-            "WAR_rating",
-            "WNET_rating",
-        ]
+    def __init__(self, feature_type):
+        self.feature_names_ = FEATURE_NAMES[feature_type]
+        # Estimators
         # self.estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
-        # self.estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
         # self.estimator_ = KernelRidge(alpha=0.1, kernel='polynomial', degree=3)
+        # self.estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
         self.estimator_ = AdaBoostRegressor(DecisionTreeRegressor(max_depth=16), n_estimators=200, loss='linear')
+        # Preprocessing
         self.scaler_ = StandardScaler()
         # self.poly_ = PolynomialFeatures()
 
@@ -163,7 +184,7 @@ class SilviuNumericFeaturesPredictor:
 
 def main():
     # classifier = DBPricePredictor()
-    classifier = SilviuNumericFeaturesPredictor()
+    classifier = SklearnEstimator('numeric.1')
     data = load_data()
     tr_errors, te_errors = evaluate(classifier, data, 2)
 
