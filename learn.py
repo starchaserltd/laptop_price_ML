@@ -23,7 +23,10 @@ from sklearn.tree import DecisionTreeRegressor
 
 from sklearn.kernel_ridge import KernelRidge
 
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import (
+    LinearRegression,
+    Ridge,
+)
 
 from sklearn.preprocessing import (
     StandardScaler,
@@ -129,8 +132,6 @@ FEATURE_NAMES = {
         "SIST_price",
         "WAR_price",
         "WNET_price",
-        "CHASSIS_rating",
-        "MDB_rating",
     ],
 }
 
@@ -182,6 +183,47 @@ class SklearnEstimator:
         for feat, imp in feat_imp:
             print('{:18s} {:.3f}'.format(feat, imp))
 
+
+class AdditivePricesEsimator:
+
+    def __init__(self):
+        self.feature_names_ = FEATURE_NAMES['prices']
+        self.estimator_ = Ridge(alpha=5000000)
+
+    def _select_features(self, data_frame):
+        ratings = np.array(data_frame[["MDB_rating", "CHASSIS_rating"]])
+        return np.hstack([
+            np.array(data_frame[self.feature_names_]),
+            ratings,
+            ratings ** 2,
+        ])
+
+    def _select_targets(self, data_frame):
+        return np.array(data_frame.realprice).astype(np.float)
+
+    def fit(self, data_frame):
+        X = self._select_features(data_frame)
+        y = self._select_targets(data_frame)
+        return self.estimator_.fit(X, y)
+
+    def predict(self, data_frame):
+        X = self._select_features(data_frame)
+        return self.estimator_.predict(X)
+
+    def print_feature_importance(self):
+        feature_names_ = (
+            self.feature_names_ +
+            [
+                "MDB_rating", "CHASSIS_rating",
+                "MDB_rating ** 2", "CHASSIS_rating ** 2",
+            ]
+        )
+        assert len(feature_names_) == len(self.estimator_.coef_)
+        feat_imp = zip(feature_names_, self.estimator_.coef_)
+        feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
+        for feat, imp in feat_imp:
+            print('{:20s} {:+8.3f}'.format(feat, imp))
+        print('{:20s} {:+8.3f}'.format("bias", self.estimator_.intercept_))
 
 
 def main():
