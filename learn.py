@@ -71,7 +71,7 @@ def evaluate_fold(classifier, data: DataFrame, i: int, verbose: int=0) -> float:
     if verbose:
         print_predictions(tr_data, tr_preds, verbose - 1)
         print_predictions(te_data, te_preds, verbose - 1)
-        print_feature_importance(classifier)
+        classifier.print_feature_importance()
     tr_error = mean_rel_error(tr_data.realprice, tr_preds)
     te_error = mean_rel_error(te_data.realprice, te_preds)
     return tr_error, te_error
@@ -79,13 +79,6 @@ def evaluate_fold(classifier, data: DataFrame, i: int, verbose: int=0) -> float:
 
 def evaluate(classifier, data: DataFrame, verbose: int=0):
     return zip(*[evaluate_fold(classifier, data, i, verbose) for i in range(10)])
-
-
-def print_feature_importance(classifier):
-    feat_imp = zip(classifier.feature_names_, classifier.estimator_.feature_importances_)
-    feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
-    for feat, imp in feat_imp:
-        print('{:18s} {:.3f}'.format(feat, imp))
 
 
 def print_predictions(data, preds, verbose):
@@ -180,6 +173,13 @@ class SklearnEstimator:
         X = self.scaler_.transform(X)
         # X = self.poly_.transform(X)
         return self.estimator_.predict(X)
+
+    def print_feature_importance(self):
+        feat_imp = zip(self.feature_names_, self.estimator_.feature_importances_)
+        feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
+        for feat, imp in feat_imp:
+            print('{:18s} {:.3f}'.format(feat, imp))
+
 
 
 def main():
