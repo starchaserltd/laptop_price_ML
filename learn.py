@@ -135,7 +135,7 @@ FEATURE_NAMES = {
 }
 
 
-class DBPricePredictor:
+class PrecomputedEstimator:
 
     def fit(self, data_frame: DataFrame):
         return self
@@ -160,16 +160,18 @@ class SklearnEstimator:
     def _select_features(self, data_frame):
         return np.array(data_frame[self.feature_names_])
 
+    def _select_targets(self, data_frame):
+        return np.array(data_frame.realprice).astype(np.float)
+
     def fit(self, data_frame):
-        X = np.array(data_frame[self.feature_names_])
-        y = np.array(data_frame.realprice).astype(np.float)
+        X = self._select_features(data_frame)
+        y = self._select_targets(data_frame)
         X = self.scaler_.fit_transform(X)
         # X = self.poly_.fit_transform(X)
-        self.estimator_.fit(X, y)
-        return self
+        return self.estimator_.fit(X, y)
 
     def predict(self, data_frame):
-        X = np.array(data_frame[self.feature_names_])
+        X = self._select_features(data_frame)
         X = self.scaler_.transform(X)
         # X = self.poly_.transform(X)
         return self.estimator_.predict(X)
@@ -183,8 +185,9 @@ class SklearnEstimator:
 
 
 def main():
-    # classifier = DBPricePredictor()
-    classifier = SklearnEstimator('numeric.1')
+    # classifier = PrecomputedEstimator()
+    # classifier = SklearnEstimator('numeric.1')
+    classifier = AdditivePricesEsimator()
     data = load_data()
     tr_errors, te_errors = evaluate(classifier, data, 2)
 
