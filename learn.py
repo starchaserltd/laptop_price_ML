@@ -133,6 +133,8 @@ FEATURE_NAMES = {
         "SIST_price",
         "WAR_price",
         "WNET_price",
+        # "CHASSIS_weight",
+        # "CHASSIS_thic",
     ],
 }
 
@@ -237,8 +239,10 @@ class AdditivePricesEsimator:
         feature_names_ = (
             self.feature_names_ +
             [
-                "MDB_rating", "CHASSIS_rating",
-                "MDB_rating ** 2", "CHASSIS_rating ** 2",
+                "MDB_rating",
+                "CHASSIS_rating",
+                "MDB_rating ** 2",
+                "CHASSIS_rating ** 2",
             ] +
             self.models_
         )
