@@ -89,8 +89,8 @@ def print_predictions(data, preds, verbose):
     errors = [rel_error(t, p) for t, p in zip(data.realprice, preds)]
     print(describe(errors))
     if verbose:
-        print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:10.2f}'.format(i, j, t, p, e)
-            for i, (j, t, p, e) in enumerate(zip(np.array(data.id), data.realprice, preds, errors))
+        print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(i, j, t, p, s, e)
+            for i, (j, t, p, s, e) in enumerate(zip(np.array(data.id), data.realprice, preds, data.price, errors))
             if e > 100))
 
 
