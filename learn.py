@@ -85,6 +85,17 @@ def evaluate(classifier, data: DataFrame, verbose: int=0):
     return zip(*[evaluate_fold(classifier, data, i, verbose) for i in range(10)])
 
 
+def print_model(data, model_id, classifier):
+    sample = data[data.id.isin([model_id])]
+    X = classifier._select_features(sample, 'test')
+    price_per_component = (X * classifier.estimator_.coef_)[0, :len(classifier.feature_names_)]
+    print(
+        price_per_component.argmax(),
+        price_per_component.max(),
+        sample.model_prod,
+    )
+
+
 def print_predictions(data, preds, verbose):
     errors = [rel_error(t, p) for t, p in zip(data.realprice, preds)]
     print(describe(errors))
@@ -133,10 +144,32 @@ FEATURE_NAMES = {
         "SIST_price",
         "WAR_price",
         "WNET_price",
-        # "CHASSIS_weight",
-        # "CHASSIS_thic",
+        "MDB_rating",
+        "CHASSIS_rating",
+        "CHASSIS_weight",
+        "CHASSIS_thic",
+    ],
+    'mdb+chassis': [
+        "MDB_rating",
+        "CHASSIS_thic",
+        "CHASSIS_depth",
+        "CHASSIS_width",
+        "CHASSIS_weight",
+        "CHASSIS_made",
+        "CHASSIS_pi",
+        "CHASSIS_msc",
+        "CHASSIS_vi",
     ],
 }
+
+
+class Estimator:
+
+    def _select_features(self, data_frame):
+        return np.array(data_frame[self.feature_names_])
+
+    def _select_targets(self, data_frame):
+        return np.array(data_frame.realprice).astype(np.float)
 
 
 class PrecomputedEstimator:
@@ -148,24 +181,20 @@ class PrecomputedEstimator:
         return data_frame.price
 
 
-class SklearnEstimator:
+class SklearnEstimator(Estimator):
 
     def __init__(self, feature_type):
         self.feature_names_ = FEATURE_NAMES[feature_type]
         # Estimators
+        # self.estimator_ = Ridge(alpha=0.1)
         # self.estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
-        # self.estimator_ = KernelRidge(alpha=0.1, kernel='polynomial', degree=3)
+        # self.estimator_ = KernelRidge(alpha=10, kernel='polynomial', degree=2)
         # self.estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
         self.estimator_ = AdaBoostRegressor(DecisionTreeRegressor(max_depth=16), n_estimators=200, loss='linear')
+
         # Preprocessing
         self.scaler_ = StandardScaler()
-        # self.poly_ = PolynomialFeatures()
-
-    def _select_features(self, data_frame):
-        return np.array(data_frame[self.feature_names_])
-
-    def _select_targets(self, data_frame):
-        return np.array(data_frame.realprice).astype(np.float)
+        self.poly_ = PolynomialFeatures()
 
     def fit(self, data_frame):
         X = self._select_features(data_frame)
@@ -187,11 +216,11 @@ class SklearnEstimator:
             print('{:18s} {:.3f}'.format(feat, imp))
 
 
-class AdditivePricesEsimator:
+class AdditivePricesEsimator(Estimator):
 
     def __init__(self):
         self.feature_names_ = FEATURE_NAMES['prices']
-        self.estimator_ = Ridge(alpha=100)
+        self.estimator_ = Ridge(alpha=10)
         self.one_hot_encoder_ = OneHotEncoder(n_values=12, sparse=False)
         self.models_ = [
             "Acer",
@@ -218,13 +247,12 @@ class AdditivePricesEsimator:
         models = self.one_hot_encoder_.transform(models)
         return np.hstack([
             np.array(data_frame[self.feature_names_]),
+            np.array(data_frame[self.feature_names_]) ** 2,
+            # np.array(data_frame[self.feature_names_]) ** 3,
             ratings,
             ratings ** 2,
             models,
         ])
-
-    def _select_targets(self, data_frame):
-        return np.array(data_frame.realprice).astype(np.float)
 
     def fit(self, data_frame):
         X = self._select_features(data_frame, 'train')
@@ -237,14 +265,16 @@ class AdditivePricesEsimator:
 
     def print_feature_importance(self):
         feature_names_ = (
-            self.feature_names_ +
-            [
+            self.feature_names_
+            + [
                 "MDB_rating",
                 "CHASSIS_rating",
                 "MDB_rating ** 2",
                 "CHASSIS_rating ** 2",
-            ] +
-            self.models_
+            ]
+            + [f + '**2' for f  in self.feature_names_]
+            # + [f + '**3' for f  in self.feature_names_]
+            + self.models_
         )
         assert len(feature_names_) == len(self.estimator_.coef_)
         feat_imp = zip(feature_names_, self.estimator_.coef_)
@@ -256,8 +286,8 @@ class AdditivePricesEsimator:
 
 def main():
     # classifier = PrecomputedEstimator()
-    # classifier = SklearnEstimator('numeric.1')
-    classifier = AdditivePricesEsimator()
+    classifier = SklearnEstimator('prices')
+    # classifier = AdditivePricesEsimator()
     data = load_data()
     tr_errors, te_errors = evaluate(classifier, data, 2)
 
