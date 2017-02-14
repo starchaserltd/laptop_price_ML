@@ -1,5 +1,6 @@
 import pdb
 import random
+import sys
 
 from typing import (
     Any,
@@ -289,10 +290,17 @@ class AdditivePricesEsimator(Estimator):
         print('{:20s} {:+8.3f}'.format("bias", self.estimator_.intercept_))
 
 
+GET_ESTIMATOR = {
+    'baseline': lambda: PrecomputedEstimator(),
+    'adaboost-prices': lambda: SklearnEstimator('prices'),
+    'aditive-prices': lambda: AdditivePricesEsimator(),
+}
+
+
 def main():
-    # classifier = PrecomputedEstimator()
-    classifier = SklearnEstimator('prices')
-    # classifier = AdditivePricesEsimator()
+    e = sys.argv[1]
+    classifier = GET_ESTIMATOR[e]()
+
     data = load_data()
     tr_errors, te_errors = evaluate(classifier, data, 2)
 
