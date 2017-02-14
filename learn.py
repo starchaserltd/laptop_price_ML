@@ -133,6 +133,20 @@ class SubsetFeatures:
         return np.array(data_frame[self.feature_names_])
 
 
+class OneHotEncoderFeatures:
+
+    def __init__(self, feature_name, values):
+        self.feature_names_ = [feature_name + ':' + v for v in values]
+        self.model_to_id_ = {m: i for i, m in enumerate(values)}
+        self.one_hot_encoder_ = OneHotEncoder(n_values=len(values), sparse=False)
+        self.one_hot_encoder_.fit(np.atleast_2d(np.arange(len(values))).T)
+
+    def __call__(self, data_frame):
+        models = [self.model_to_id_[m] for m in data_frame["model_prod"]]
+        models = np.atleast_2d(models).T
+        return self.one_hot_encoder_.transform(models)
+
+
 SELECT_FEATURES = {
     'numeric.1': [
         SubsetFeatures(
@@ -175,19 +189,37 @@ SELECT_FEATURES = {
                 "CHASSIS_thic",
             ],
         ),
+        OneHotEncoderFeatures(
+            'model_prod',
+            [
+                "Acer",
+                "Apple",
+                "Asus",
+                "Clevo",
+                "Dell",
+                "Fujitsu",
+                "Gigabyte",
+                "HP",
+                "Lenovo",
+                "MSI",
+                "Razer",
+                "Samsung",
+            ],
+        ),
     ],
     'mdb+chassis': [
         SubsetFeatures(
             [
+                "price",
                 "MDB_rating",
                 "CHASSIS_thic",
                 "CHASSIS_depth",
                 "CHASSIS_width",
                 "CHASSIS_weight",
-                "CHASSIS_made",
-                "CHASSIS_pi",
-                "CHASSIS_msc",
-                "CHASSIS_vi",
+                # "CHASSIS_made",
+                # "CHASSIS_pi",
+                # "CHASSIS_msc",
+                # "CHASSIS_vi",
             ],
         ),
     ],
@@ -256,66 +288,23 @@ class SklearnEstimator(Estimator):
 
 class AdditivePricesEsimator(Estimator):
 
-    def __init__(self):
-        self.feature_names_ = FEATURE_NAMES['prices']
+    def __init__(self, select_features_list):
+        self.select_features_list_ = select_features_list
         self.estimator_ = Ridge(alpha=10)
-        self.one_hot_encoder_ = OneHotEncoder(n_values=12, sparse=False)
-        self.models_ = [
-            "Acer",
-            "Apple",
-            "Asus",
-            "Clevo",
-            "Dell",
-            "Fujitsu",
-            "Gigabyte",
-            "HP",
-            "Lenovo",
-            "MSI",
-            "Razer",
-            "Samsung",
-        ]
-        self.model_to_id_ = {m: i for i, m in enumerate(self.models_)}
-
-    def _select_features(self, data_frame, stage):
-        ratings = np.array(data_frame[["MDB_rating", "CHASSIS_rating"]])
-        models = [self.model_to_id_[m] for m in data_frame["model_prod"]]
-        models = np.atleast_2d(models).T
-        if stage == 'train':
-            self.one_hot_encoder_.fit(models)
-        models = self.one_hot_encoder_.transform(models)
-        return np.hstack([
-            np.array(data_frame[self.feature_names_]),
-            np.array(data_frame[self.feature_names_]) ** 2,
-            # np.array(data_frame[self.feature_names_]) ** 3,
-            ratings,
-            ratings ** 2,
-            models,
-        ])
 
     def fit(self, data_frame):
-        X = self._select_features(data_frame, 'train')
+        X = self._select_features(data_frame)
         y = self._select_targets(data_frame)
         return self.estimator_.fit(X, y)
 
     def predict(self, data_frame):
-        X = self._select_features(data_frame, 'test')
+        X = self._select_features(data_frame)
         return self.estimator_.predict(X)
 
     def print_feature_importance(self):
-        feature_names_ = (
-            self.feature_names_
-            + [
-                "MDB_rating",
-                "CHASSIS_rating",
-                "MDB_rating ** 2",
-                "CHASSIS_rating ** 2",
-            ]
-            + [f + '**2' for f  in self.feature_names_]
-            # + [f + '**3' for f  in self.feature_names_]
-            + self.models_
-        )
-        assert len(feature_names_) == len(self.estimator_.coef_)
-        feat_imp = zip(feature_names_, self.estimator_.coef_)
+        feature_names = sum([s.feature_names_ for s in self.select_features_list_], [])
+        assert len(feature_names) == len(self.estimator_.coef_)
+        feat_imp = zip(feature_names, self.estimator_.coef_)
         feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
         for feat, imp in feat_imp:
             print('{:20s} {:+8.3f}'.format(feat, imp))
@@ -325,7 +314,9 @@ class AdditivePricesEsimator(Estimator):
 GET_ESTIMATOR = {
     'baseline': lambda: PrecomputedEstimator(),
     'adaboost-prices': lambda: SklearnEstimator(SELECT_FEATURES['prices']),
-    'aditive-prices': lambda: AdditivePricesEsimator(),
+    'adaboost-mdb+chassis': lambda: SklearnEstimator(SELECT_FEATURES['mdb+chassis']),
+    'aditive-prices': lambda: AdditivePricesEsimator(SELECT_FEATURES['prices']),
+    'aditive-mdb+chassis': lambda: AdditivePricesEsimator(SELECT_FEATURES['mdb+chassis']),
 }
 
 
