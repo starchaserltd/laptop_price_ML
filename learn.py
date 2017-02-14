@@ -55,8 +55,8 @@ def remove_ext(filename):
     return name
 
 
-def load_data() -> DataFrame:
-    return read_csv('data/pricing.csv', sep='|')
+def load_data(name: str) -> DataFrame:
+    return read_csv('data/{}.csv'.format(name), sep='|')
 
 
 def rel_error(x, y):
@@ -318,10 +318,9 @@ def main():
     )
     args = parser.parse_args()
 
-    e = sys.argv[1]
-    classifier = GET_ESTIMATOR[e]()
+    classifier = GET_ESTIMATOR[args.estimator]()
 
-    data = load_data()
+    data = load_data(args.data)
     tr_errors, te_errors = evaluate(classifier, data, 2)
 
     print('Tr:', end=' ')
