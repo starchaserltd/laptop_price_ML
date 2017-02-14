@@ -1,4 +1,5 @@
 import pdb
+import random
 
 from typing import (
     Any,
@@ -28,6 +29,10 @@ from sklearn.linear_model import (
     Ridge,
 )
 
+from sklearn.model_selection import (
+    train_test_split,
+)
+
 from sklearn.preprocessing import (
     StandardScaler,
     OneHotEncoder,
@@ -37,18 +42,13 @@ from sklearn.preprocessing import (
 from sklearn.svm import SVR
 
 
+SEED = 1337
+np.random.seed(SEED)
+random.seed(SEED)
+
+
 def load_data() -> DataFrame:
     return read_csv('data/pricing.csv', sep='|')
-
-
-def load_fold(split: str, fold: int) -> List[int]:
-    PATH = 'filelists/{:s}_{:02d}.txt'
-    with open(PATH.format(split, fold), 'r') as f:
-        return [int(i) for i in f.readlines()]
-
-
-def select_data(data_frame: DataFrame, ids: List[int]) -> DataFrame:
-    return data_frame[data_frame['id'].isin(ids)]
 
 
 def rel_error(x, y):
@@ -62,27 +62,29 @@ def mean_rel_error(true_values, estimated_values):
 
 
 def evaluate_fold(classifier, data: DataFrame, i: int, verbose: int=0) -> float:
-    # Train
-    tr_ids = load_fold('train', i)
-    tr_data = select_data(data, tr_ids)
+    idxs = np.arange(len(data))
+    tr_idxs, te_idxs = train_test_split(idxs, test_size=300, random_state=i)
+
+    tr_data = data.iloc[tr_idxs]
+    te_data = data.iloc[te_idxs]
+
     classifier.fit(tr_data)
-    # Test
-    te_ids = load_fold('test', i)
-    te_data = select_data(data, te_ids)
-    # Predict
+
     tr_preds = classifier.predict(tr_data)
     te_preds = classifier.predict(te_data)
+
     if verbose:
         print_predictions(tr_data, tr_preds, verbose - 1)
         print_predictions(te_data, te_preds, verbose - 1)
         classifier.print_feature_importance()
+
     tr_error = mean_rel_error(tr_data.realprice, tr_preds)
     te_error = mean_rel_error(te_data.realprice, te_preds)
     return tr_error, te_error
 
 
 def evaluate(classifier, data: DataFrame, verbose: int=0):
-    return zip(*[evaluate_fold(classifier, data, i, verbose) for i in range(10)])
+    return zip(*[evaluate_fold(classifier, data, i, verbose) for i in range(3)])
 
 
 def print_model(data, model_id, classifier):
