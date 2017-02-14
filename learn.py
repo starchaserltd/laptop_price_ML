@@ -1,3 +1,5 @@
+import argparse
+import os
 import pdb
 import random
 import sys
@@ -46,6 +48,11 @@ from sklearn.svm import SVR
 SEED = 1337
 np.random.seed(SEED)
 random.seed(SEED)
+
+
+def remove_ext(filename):
+    name, _ = os.path.splitext(filename)
+    return name
 
 
 def load_data() -> DataFrame:
@@ -298,6 +305,19 @@ GET_ESTIMATOR = {
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Learn a predictive function for price estimation.')
+    parser.add_argument(
+        '-e', '--estimator',
+        choices=GET_ESTIMATOR.keys(),
+        help='type of estimator',
+    )
+    parser.add_argument(
+        '-d', '--data',
+        choices=[remove_ext(f) for f in os.listdir('data')],
+        help='name of CSV data file',
+    )
+    args = parser.parse_args()
+
     e = sys.argv[1]
     classifier = GET_ESTIMATOR[e]()
 
