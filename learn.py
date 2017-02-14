@@ -173,8 +173,11 @@ class Estimator:
     def _select_targets(self, data_frame):
         return np.array(data_frame.realprice).astype(np.float)
 
+    def print_feature_importance(self):
+        pass
 
-class PrecomputedEstimator:
+
+class PrecomputedEstimator(Estimator):
 
     def fit(self, data_frame: DataFrame):
         return self
