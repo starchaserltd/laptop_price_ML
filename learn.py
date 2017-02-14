@@ -124,51 +124,72 @@ def print_results(results: List[float]):
     print()
 
 
-FEATURE_NAMES = {
+class SubsetFeatures:
+
+    def __init__(self, feature_names):
+        self.feature_names_ = feature_names
+
+    def __call__(self, data_frame):
+        return np.array(data_frame[self.feature_names_])
+
+
+SELECT_FEATURES = {
     'numeric.1': [
-        "CPU_rating",
-        "CPU_tdp",
-        "GPU_rating",
-        "GPU_power",
-        "ACUM_rating",
-        "CHASSIS_thic",
-        "CHASSIS_weight",
-        "CHASSIS_rating",
-        "DISPLAY_rating",
-        "HDD_rating",
-        "MDB_rating",
-        "MEM_rating",
-        "ODD_price",
-        "SIST_price",
-        "WAR_rating",
-        "WNET_rating",
+        SubsetFeatures(
+            [
+                "CPU_rating",
+                "CPU_tdp",
+                "GPU_rating",
+                "GPU_power",
+                "ACUM_rating",
+                "CHASSIS_thic",
+                "CHASSIS_weight",
+                "CHASSIS_rating",
+                "DISPLAY_rating",
+                "HDD_rating",
+                "MDB_rating",
+                "MEM_rating",
+                "ODD_price",
+                "SIST_price",
+                "WAR_rating",
+                "WNET_rating",
+            ],
+        ),
     ],
     'prices': [
-        "CPU_price",
-        "GPU_price",
-        "ACUM_price",
-        "DISPLAY_price",
-        "HDD_price",
-        "MEM_price",
-        "ODD_price",
-        "SIST_price",
-        "WAR_price",
-        "WNET_price",
-        "MDB_rating",
-        "CHASSIS_rating",
-        "CHASSIS_weight",
-        "CHASSIS_thic",
+        SubsetFeatures(
+            [
+                "CPU_price",
+                "GPU_price",
+                "ACUM_price",
+                "DISPLAY_price",
+                "HDD_price",
+                "MEM_price",
+                "ODD_price",
+                "SIST_price",
+                "WAR_price",
+                "WNET_price",
+                "MDB_rating",
+                "CHASSIS_rating",
+                "CHASSIS_weight",
+                "CHASSIS_thic",
+            ],
+        ),
     ],
     'mdb+chassis': [
-        "MDB_rating",
-        "CHASSIS_thic",
-        "CHASSIS_depth",
-        "CHASSIS_width",
-        "CHASSIS_weight",
-        "CHASSIS_made",
-        "CHASSIS_pi",
-        "CHASSIS_msc",
-        "CHASSIS_vi",
+        SubsetFeatures(
+            [
+                "MDB_rating",
+                "CHASSIS_thic",
+                "CHASSIS_depth",
+                "CHASSIS_width",
+                "CHASSIS_weight",
+                "CHASSIS_made",
+                "CHASSIS_pi",
+                "CHASSIS_msc",
+                "CHASSIS_vi",
+            ],
+        ),
     ],
 }
 
@@ -176,7 +197,10 @@ FEATURE_NAMES = {
 class Estimator:
 
     def _select_features(self, data_frame):
-        return np.array(data_frame[self.feature_names_])
+        return np.hstack([
+            select_features(data_frame)
+            for select_features in self.select_features_list_
+        ])
 
     def _select_targets(self, data_frame):
         return np.array(data_frame.realprice).astype(np.float)
@@ -196,8 +220,8 @@ class PrecomputedEstimator(Estimator):
 
 class SklearnEstimator(Estimator):
 
-    def __init__(self, feature_type):
-        self.feature_names_ = FEATURE_NAMES[feature_type]
+    def __init__(self, select_features_list):
+        self.select_features_list_ = select_features_list
         # Estimators
         # self.estimator_ = Ridge(alpha=0.1)
         # self.estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
@@ -223,7 +247,8 @@ class SklearnEstimator(Estimator):
         return self.estimator_.predict(X)
 
     def print_feature_importance(self):
-        feat_imp = zip(self.feature_names_, self.estimator_.feature_importances_)
+        feature_names = sum([s.feature_names_ for s in self.select_features_list_], [])
+        feat_imp = zip(feature_names, self.estimator_.feature_importances_)
         feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
         for feat, imp in feat_imp:
             print('{:18s} {:.3f}'.format(feat, imp))
@@ -299,7 +324,7 @@ class AdditivePricesEsimator(Estimator):
 
 GET_ESTIMATOR = {
     'baseline': lambda: PrecomputedEstimator(),
-    'adaboost-prices': lambda: SklearnEstimator('prices'),
+    'adaboost-prices': lambda: SklearnEstimator(SELECT_FEATURES['prices']),
     'aditive-prices': lambda: AdditivePricesEsimator(),
 }
 
