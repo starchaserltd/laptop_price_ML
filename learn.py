@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import pdb
 import random
@@ -34,6 +35,7 @@ from sklearn.linear_model import (
 
 from sklearn.model_selection import (
     train_test_split,
+    RandomizedSearchCV,
 )
 
 from sklearn.preprocessing import (
@@ -57,6 +59,11 @@ def remove_ext(filename):
 
 def load_data(name: str) -> DataFrame:
     return read_csv('data/{}.csv'.format(name), sep='|')
+
+
+def select_targets(data_frame):
+    return np.array(data_frame.realprice).astype(np.float)
+    # return np.array(data_frame.realprice - data_frame.price).astype(np.float)
 
 
 def rel_error(x, y):
@@ -86,8 +93,8 @@ def evaluate_fold(classifier, data: DataFrame, i: int, verbose: int=0) -> float:
         print_predictions(te_data, te_preds, verbose - 1)
         classifier.print_feature_importance()
 
-    tr_error = mean_rel_error(tr_data.realprice, tr_preds)
-    te_error = mean_rel_error(te_data.realprice, te_preds)
+    tr_error = mean_rel_error(select_targets(tr_data), tr_preds)
+    te_error = mean_rel_error(select_targets(te_data), te_preds)
     return tr_error, te_error
 
 
@@ -107,12 +114,17 @@ def print_model(data, model_id, classifier):
 
 
 def print_predictions(data, preds, verbose):
-    errors = [rel_error(t, p) for t, p in zip(data.realprice, preds)]
-    print(describe(errors))
+    relative_errors = rel_error(select_targets(data), preds)
+    absolute_errors = np.abs(select_targets(data) - preds)
+    print(describe(absolute_errors))
     if verbose:
-        print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(i, j, t, p, s, e)
-            for i, (j, t, p, s, e) in enumerate(zip(np.array(data.id), data.realprice, preds, data.price, errors))
-            if e > 100))
+        print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(i, id_, r_price, p_price, pred, rel_e, abs_e)
+            for i, (id_, r_price, p_price, pred, rel_e, abs_e) in enumerate(zip(np.array(data.id), data.realprice, data.price, preds, relative_errors, absolute_errors))
+            if rel_e > 50))
+        # print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:32s} {:10.2f}'.format(i, j, t, p, s, e)
+        #    for i, (j, t, p, s, e) in enumerate(zip(np.array(data.id), data.realprice - data.price, preds, data.CHASSIS_made, errors))
+        #    if e > 10))
+
 
 
 def print_results(results: List[float]):
@@ -132,19 +144,87 @@ class SubsetFeatures:
     def __call__(self, data_frame):
         return np.array(data_frame[self.feature_names_])
 
+class ChassisMadeTransformer:
+    def __init__(self):
+        self.name = 'CHASSIS_made'
+        self.text_to_value_ = {
+            "Aluminium": "aluminium",
+            "Anodized aluminium": "aluminium",
+            "Carbon fiber": "carbon",
+            "Carbon fiber reinforced plastic": "carbon",
+            "Glass fiber reinforced plastic": "glass",
+            "Magnesium": "magnesium",
+            "Magnesium alloy": "magnesium",
+            "Magnesium aluminium alloy": "magnesium",
+            "Metal": "aluminium",
+            "Plastic": "plastic",
+            "Shock-absorbing ultra-polymer": "polymer",
+            "Steel reinforcements": "other",
+        }
+        self.values = sorted(list(set(self.text_to_value_.values())))
+        self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
+
+    def __call__(self, v):
+        return [self.value_to_id_[self.text_to_value_[w]] for w in v.split(',')]
+
+
+class ModelProdTransformer:
+
+    def __init__(self):
+        self.name = 'model_prod'
+        self.values = [
+            "Acer",
+            "Apple",
+            "Asus",
+            "Clevo",
+            "Dell",
+            "Fujitsu",
+            "Gigabyte",
+            "HP",
+            "Lenovo",
+            "MSI",
+            "Razer",
+            "Samsung",
+        ]
+        self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
+
+    def __call__(self, v):
+        return [self.value_to_id_[v]]
+
+
+# [
+#     'USB'  # USB 3.0 USB 3.0 (Type-C) USB 3.1 USB 3.1 (Type-C)
+#     'LAN'
+#     'RS-232'
+#     'Card reader'  # 2-in-1 card reader 3-in-1 card reader 4-in-1 card reader MicroSD card reader SD card reader SDXC card reader
+#     'Docking port',
+#     'ExpressCard',
+#     'External graphics port',
+#     'SIM card',
+#     'SmartCard',
+#     'Thunderbolt',  # 'OneLink+',
+#     'Other',
+# ],
+
+
+# 1 X DP 1 X mDP 2 X mDP
+# 1 X HDMI 1 X Micro HDMI
+# 1 X VGA
+
 
 class OneHotEncoderFeatures:
 
-    def __init__(self, feature_name, values):
-        self.feature_names_ = [feature_name + ':' + v for v in values]
-        self.model_to_id_ = {m: i for i, m in enumerate(values)}
-        self.one_hot_encoder_ = OneHotEncoder(n_values=len(values), sparse=False)
-        self.one_hot_encoder_.fit(np.atleast_2d(np.arange(len(values))).T)
+    def __init__(self, transformer):
+        self.transformer_ = transformer
+        self.feature_names_ = [transformer.name + ':' + v for v in transformer.values]
 
     def __call__(self, data_frame):
-        models = [self.model_to_id_[m] for m in data_frame["model_prod"]]
-        models = np.atleast_2d(models).T
-        return self.one_hot_encoder_.transform(models)
+        I = [self.transformer_(m) for m in data_frame[self.transformer_.name]]
+        X = np.zeros((data_frame.shape[0], len(self.transformer_.values)))
+        for i, ids in enumerate(I):
+            for j in ids:
+                X[i, j] = 1
+        return X
 
 
 SELECT_FEATURES = {
@@ -173,6 +253,8 @@ SELECT_FEATURES = {
     'prices': [
         SubsetFeatures(
             [
+                "CPU_rating",
+                "GPU_rating",
                 "CPU_price",
                 "GPU_price",
                 "ACUM_price",
@@ -184,45 +266,32 @@ SELECT_FEATURES = {
                 "WAR_price",
                 "WNET_price",
                 "MDB_rating",
-                "CHASSIS_rating",
+                # "CHASSIS_rating",
+                "CHASSIS_width",
                 "CHASSIS_weight",
                 "CHASSIS_thic",
             ],
         ),
-        OneHotEncoderFeatures(
-            'model_prod',
-            [
-                "Acer",
-                "Apple",
-                "Asus",
-                "Clevo",
-                "Dell",
-                "Fujitsu",
-                "Gigabyte",
-                "HP",
-                "Lenovo",
-                "MSI",
-                "Razer",
-                "Samsung",
-            ],
-        ),
+        OneHotEncoderFeatures(ModelProdTransformer()),
     ],
     'mdb+chassis': [
         SubsetFeatures(
             [
-                "price",
+                # "price",
+                # "CHASSIS_rating",
                 "MDB_rating",
                 "CHASSIS_thic",
                 "CHASSIS_depth",
                 "CHASSIS_width",
                 "CHASSIS_weight",
-                # "CHASSIS_made",
-                # "CHASSIS_pi",
                 # "CHASSIS_msc",
                 # "CHASSIS_vi",
             ],
         ),
+        OneHotEncoderFeatures(ChassisMadeTransformer()),
+        # OneHotEncoderFeatures("CHASSIS_pi"),
     ],
+
 }
 
 
@@ -235,7 +304,7 @@ class Estimator:
         ])
 
     def _select_targets(self, data_frame):
-        return np.array(data_frame.realprice).astype(np.float)
+        return select_targets(data_frame)
 
     def print_feature_importance(self):
         pass
@@ -255,11 +324,30 @@ class SklearnEstimator(Estimator):
     def __init__(self, select_features_list):
         self.select_features_list_ = select_features_list
         # Estimators
-        # self.estimator_ = Ridge(alpha=0.1)
-        # self.estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
-        # self.estimator_ = KernelRidge(alpha=10, kernel='polynomial', degree=2)
-        # self.estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
-        self.estimator_ = AdaBoostRegressor(DecisionTreeRegressor(max_depth=16), n_estimators=200, loss='linear')
+        # estimator_ = Ridge(alpha=0.1)
+        # estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
+        # estimator_ = KernelRidge(alpha=10, kernel='polynomial', degree=2)
+        # estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
+
+        estimator_ = AdaBoostRegressor(
+            DecisionTreeRegressor(max_depth=8),
+            n_estimators=100,
+            loss='linear',
+        )
+        param_dist = {
+            "base_estimator__max_depth": [4, 8, 16, 32, 64],
+            "base_estimator__splitter": ["best", "random"],
+            "n_estimators": [64, 128, 256, 512, 1024],
+        }
+
+        # run randomized search
+        n_iter_search = 20
+        self.estimator_ = RandomizedSearchCV(
+            estimator_,
+            param_distributions=param_dist,
+            n_iter=n_iter_search,
+            verbose=1,
+        )
 
         # Preprocessing
         self.scaler_ = StandardScaler()
@@ -279,11 +367,13 @@ class SklearnEstimator(Estimator):
         return self.estimator_.predict(X)
 
     def print_feature_importance(self):
+        estimator = self.estimator_.best_estimator_
         feature_names = sum([s.feature_names_ for s in self.select_features_list_], [])
-        feat_imp = zip(feature_names, self.estimator_.feature_importances_)
+        feat_imp = zip(feature_names, estimator.feature_importances_)
         feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
         for feat, imp in feat_imp:
-            print('{:18s} {:.3f}'.format(feat, imp))
+            print('{:24s} {:.3f}'.format(feat, imp))
+        print(json.dumps(self.estimator_.best_params_, indent=True, sort_keys=True))
 
 
 class AdditivePricesEsimator(Estimator):
@@ -313,6 +403,7 @@ class AdditivePricesEsimator(Estimator):
 
 GET_ESTIMATOR = {
     'baseline': lambda: PrecomputedEstimator(),
+    'adaboost-numeric.1': lambda: SklearnEstimator(SELECT_FEATURES['numeric.1']),
     'adaboost-prices': lambda: SklearnEstimator(SELECT_FEATURES['prices']),
     'adaboost-mdb+chassis': lambda: SklearnEstimator(SELECT_FEATURES['mdb+chassis']),
     'aditive-prices': lambda: AdditivePricesEsimator(SELECT_FEATURES['prices']),
