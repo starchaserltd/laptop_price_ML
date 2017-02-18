@@ -144,7 +144,19 @@ def print_results(results: List[float]):
     print()
 
 
-class CombinedFeatures:
+def extract_n_antennas(args):
+    n = len(args[0])
+    n_antennas = np.zeros(n)
+    for i, line in enumerate(args[0]):
+        try:
+            matches = re.findall('([0-9]+) x antennas', line)
+            n_antennas[i] = int(matches[0] or 0)
+        except TypeError:
+            n_antennas[i] = 0
+    return n_antennas
+
+
+class ProcessedFeatures:
 
     def __init__(self, name, selected, func):
         self.feature_names_ = [name]
@@ -201,6 +213,17 @@ class ChassisMadeTransformer:
 
     def __call__(self, v):
         return [self.value_to_id_[self.text_to_value_[w]] for w in v.split(',')]
+
+
+class ACUMTipcTransformer:
+
+    def __init__(self):
+        self.name = 'ACUM_tipc'
+        self.values = ["Li-Ion", "Li-Pol"]
+        self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
+
+    def __call__(self, v):
+        return [self.value_to_id_[v]]
 
 
 class CPUModelTransformer:
@@ -354,10 +377,8 @@ SELECT_FEATURES = {
                 "GPU_power",
                 "GPU_price",
                 "WNET_speed",
-                # nr de (antennas) din msc
                 "ODD_price",
                 "ACUM_cap",
-                # tipc (poate sa fie Li-Ion sau Li-Pol )
                 "WAR_years",
                 "WAR_typewar",
                 "SIST_price",
@@ -375,18 +396,24 @@ SELECT_FEATURES = {
                 # daca submodel contine WWAN sau nu
             ],
         ),
-        CombinedFeatures(
+        ProcessedFeatures(
             name="DISPLAY_hres*vres",
             selected=["DISPLAY_hres", "DISPLAY_vres"],
             func=lambda xs: xs[0] * xs[1],
         ),
-        CombinedFeatures(
+        ProcessedFeatures(
             name="MEM_freq/lat",
             selected=["MEM_freq", "MEM_lat"],
             func=lambda xs: xs[0] / xs[1],
         ),
+        ProcessedFeatures(
+            name="WNET_n_antennas",
+            selected=["WNET_msc"],
+            func=extract_n_antennas,
+        ),
         OneHotEncoderFeatures(CPUModelTransformer()),
         OneHotEncoderFeatures(GPUModelTransformer()),
+        OneHotEncoderFeatures(ACUMTipcTransformer()),
         LaunchDateFeatures("CPU_ldate"),
         LaunchDateFeatures("GPU_ldate"),
     ],
