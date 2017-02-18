@@ -324,6 +324,31 @@ class CPUModelTransformer:
         return [self.text_to_id_(w) for w in v.split(',')]
 
 
+
+class MDBNetwTransformer:
+
+    def __init__(self):
+        self.name = 'MDB_netw'
+        self.values = [
+            "Broadcom",
+            "Intel",
+            "Killer",
+            "OEM",
+            "Qualcomm",
+            "Realtek",
+            "NONE",
+        ]
+
+    def text_to_id_(self, text):
+        for i, v in enumerate(self.values):
+            if re.match('^{}'.format(v), text):
+                return i
+        assert False
+
+    def __call__(self, v):
+        return [self.text_to_id_(w) for w in v.split(',')]
+
+
 class GPUModelTransformer:
 
     def __init__(self):
@@ -442,7 +467,6 @@ SELECT_FEATURES = {
                 # msc
                 "MDB_rating",
                 # "MDB_interface",
-                # "MDB_netw",
                 # daca submodel contine WWAN sau nu
             ],
         ),
@@ -467,6 +491,8 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(ChassisMadeTransformer()),
         OneHotEncoderFeatures(ChassisPiTransformer()),
         OneHotEncoderFeatures(ChassisViTransformer()),
+        OneHotEncoderFeatures(MDBNetwTransformer()),
+        OneHotEncoderFeatures(ModelProdTransformer()),
         LaunchDateFeatures("CPU_ldate"),
         LaunchDateFeatures("GPU_ldate"),
     ],
