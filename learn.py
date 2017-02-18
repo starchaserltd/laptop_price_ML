@@ -301,6 +301,58 @@ SELECT_FEATURES = {
             ],
         ),
     ],
+    'silviu.1': [
+        SubsetFeatures(
+            [
+                "CPU_rating",
+                "CPU_tdp",
+                "CPU_price",
+                # Launch date
+                # hres * vres
+                "DISPLAY_hres",
+                "DISPLAY_vres",
+                "DISPLAY_size",
+                "DISPLAY_touch",
+                "MEM_cap",
+                # freq / lat
+                "MEM_freq",
+                "MEM_lat",
+                "MEM_volt",
+                "HDD_cap",
+                "HDD_readspeed",
+                "HDD_writes",
+                "SHDD_cap",
+                "SHDD_readspeed",
+                "SHDD_writes",
+                "GPU_rating",
+                "GPU_power",
+                "GPU_price",
+                # Launch date
+                "WNET_speed",
+                # nr de (antennas) din msc
+                "ODD_price",
+                "ACUM_cap",
+                # tipc (poate sa fie Li-Ion sau Li-Pol )
+                "WAR_years",
+                "WAR_typewar",
+                "SIST_price",
+                "CHASSIS_thic",
+                "CHASSIS_depth",
+                "CHASSIS_width",
+                "CHASSIS_weight",
+                # made
+                # pi
+                # vi
+                # msc
+                "MDB_rating",
+                # "MDB_interface",
+                # "MDB_netw",
+                # daca submodel contine WWAN sau nu
+            ],
+        ),
+        OneHotEncoderFeatures(CPUModelTransformer()),
+        OneHotEncoderFeatures(GPUModelTransformer()),
+    ],
     'prices': [
         SubsetFeatures(
             [
@@ -342,11 +394,15 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(ChassisMadeTransformer()),
         # OneHotEncoderFeatures("CHASSIS_pi"),
     ],
-
 }
 
 
 class Estimator:
+
+    # Estimators
+    # estimator_ = Ridge(alpha=0.1)
+    # estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
+    # estimator_ = KernelRidge(alpha=10, kernel='polynomial', degree=2)
 
     def _select_features(self, data_frame):
         return np.hstack([
@@ -370,15 +426,48 @@ class PrecomputedEstimator(Estimator):
         return data_frame.price
 
 
-class SklearnEstimator(Estimator):
+class SVREstimator(Estimator):
 
     def __init__(self, select_features_list):
         self.select_features_list_ = select_features_list
-        # Estimators
-        # estimator_ = Ridge(alpha=0.1)
-        # estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
-        # estimator_ = KernelRidge(alpha=10, kernel='polynomial', degree=2)
-        # estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
+
+        estimator_ = SVR(C=5000, kernel='rbf', gamma=0.05)
+        param_dist = {
+            "C": [0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 51.2, 102.4, 204.8],
+            "gamma": [0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28],
+        }
+
+        # run randomized search
+        n_iter_search = 20
+        self.estimator_ = RandomizedSearchCV(
+            estimator_,
+            param_distributions=param_dist,
+            n_iter=n_iter_search,
+            verbose=1,
+        )
+
+        # Preprocessing
+        self.scaler_ = StandardScaler()
+
+    def fit(self, data_frame):
+        X = self._select_features(data_frame)
+        y = self._select_targets(data_frame)
+        X = self.scaler_.fit_transform(X)
+        return self.estimator_.fit(X, y)
+
+    def predict(self, data_frame):
+        X = self._select_features(data_frame)
+        X = self.scaler_.transform(X)
+        return self.estimator_.predict(X)
+
+    def print_feature_importance(self):
+        print(json.dumps(self.estimator_.best_params_, indent=True, sort_keys=True))
+
+
+class AdaboostEstimator(Estimator):
+
+    def __init__(self, select_features_list):
+        self.select_features_list_ = select_features_list
 
         estimator_ = AdaBoostRegressor(
             DecisionTreeRegressor(max_depth=8),
@@ -427,19 +516,26 @@ class SklearnEstimator(Estimator):
         print(json.dumps(self.estimator_.best_params_, indent=True, sort_keys=True))
 
 
-class AdditivePricesEsimator(Estimator):
+class RidgeEstimator(Estimator):
 
     def __init__(self, select_features_list):
         self.select_features_list_ = select_features_list
         self.estimator_ = Ridge(alpha=10)
+        # Preprocessing
+        self.scaler_ = StandardScaler()
+        # self.poly_ = PolynomialFeatures(degree=2)
 
     def fit(self, data_frame):
         X = self._select_features(data_frame)
+        X = self.scaler_.fit_transform(X)
+        # X = self.poly_.fit_transform(X)
         y = self._select_targets(data_frame)
         return self.estimator_.fit(X, y)
 
     def predict(self, data_frame):
         X = self._select_features(data_frame)
+        X = self.scaler_.transform(X)
+        # X = self.poly_.transform(X)
         return self.estimator_.predict(X)
 
     def print_feature_importance(self):
@@ -453,12 +549,10 @@ class AdditivePricesEsimator(Estimator):
 
 
 GET_ESTIMATOR = {
-    'baseline': lambda: PrecomputedEstimator(),
-    'adaboost-numeric.1': lambda: SklearnEstimator(SELECT_FEATURES['numeric.1']),
-    'adaboost-prices': lambda: SklearnEstimator(SELECT_FEATURES['prices']),
-    'adaboost-mdb+chassis': lambda: SklearnEstimator(SELECT_FEATURES['mdb+chassis']),
-    'aditive-prices': lambda: AdditivePricesEsimator(SELECT_FEATURES['prices']),
-    'aditive-mdb+chassis': lambda: AdditivePricesEsimator(SELECT_FEATURES['mdb+chassis']),
+    'baseline': PrecomputedEstimator,
+    'adaboost': AdaboostEstimator,
+    'ridge': RidgeEstimator,
+    'svr': SVREstimator,
 }
 
 
@@ -470,14 +564,18 @@ def main():
         help='type of estimator',
     )
     parser.add_argument(
+        '-f', '--features',
+        choices=SELECT_FEATURES.keys(),
+        help='type of features',
+    )
+    parser.add_argument(
         '-d', '--data',
         choices=[remove_ext(f) for f in os.listdir('data')],
         help='name of CSV data file',
     )
     args = parser.parse_args()
 
-    classifier = GET_ESTIMATOR[args.estimator]()
-
+    classifier = GET_ESTIMATOR[args.estimator](SELECT_FEATURES[args.features])
     data = load_data(args.data)
     tr_errors, te_errors = evaluate(classifier, data, 2)
 
