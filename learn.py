@@ -230,6 +230,7 @@ class ChassisPiTransformer:
             'sim-card',
             'smart-card',
             'thunderbolt',
+            'none',
         ]
         self.matchers = [
             lambda t: True,
@@ -243,6 +244,7 @@ class ChassisPiTransformer:
             lambda t: re.search('SIM card', t),
             lambda t: re.search('SmartCard', t),
             lambda t: re.search('Thunderbolt', t) or re.search('OneLink+', t),
+            lambda t: t == '',
         ]
 
     def text_to_ids_(self, text):
@@ -252,6 +254,35 @@ class ChassisPiTransformer:
                 n_times = int(n_times[0]) if n_times else 1
                 return [i] * n_times
         return [0]
+
+    def __call__(self, v):
+        return sum([self.text_to_ids_(w) for w in v.split(',')], [])
+
+
+class ChassisViTransformer:
+
+    def __init__(self):
+        self.name = 'CHASSIS_vi'
+        self.values = [
+            'dp',
+            'hdmi',
+            'vga',
+            'none',
+        ]
+        self.matchers = [
+            lambda t: re.search('DP', t),
+            lambda t: re.search('HDMI', t),
+            lambda t: re.search('VGA', t),
+            lambda t: t == '',
+        ]
+
+    def text_to_ids_(self, text):
+        for i, v in enumerate(self.values, 0):
+            if self.matchers[i](text) :
+                n_times = re.findall('^([0-9]+) X ', text)
+                n_times = int(n_times[0]) if n_times else 1
+                return [i] * n_times
+        assert False
 
     def __call__(self, v):
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
@@ -341,11 +372,6 @@ class ModelProdTransformer:
         return [self.value_to_id_[v]]
 
 
-# 1 X DP 1 X mDP 2 X mDP
-# 1 X HDMI 1 X Micro HDMI
-# 1 X VGA
-
-
 class OneHotEncoderFeatures:
 
     def __init__(self, transformer):
@@ -413,7 +439,6 @@ SELECT_FEATURES = {
                 "CHASSIS_depth",
                 "CHASSIS_width",
                 "CHASSIS_weight",
-                # vi
                 # msc
                 "MDB_rating",
                 # "MDB_interface",
@@ -441,6 +466,7 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(ACUMTipcTransformer()),
         OneHotEncoderFeatures(ChassisMadeTransformer()),
         OneHotEncoderFeatures(ChassisPiTransformer()),
+        OneHotEncoderFeatures(ChassisViTransformer()),
         LaunchDateFeatures("CPU_ldate"),
         LaunchDateFeatures("GPU_ldate"),
     ],
