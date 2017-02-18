@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import os
 import pdb
@@ -59,7 +60,13 @@ def remove_ext(filename):
 
 
 def load_data(name: str) -> DataFrame:
-    return read_csv('data/{}.csv'.format(name), sep='|')
+    dateparse = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
+    return read_csv(
+        'data/{}.csv'.format(name),
+        sep='|',
+        parse_dates=['CPU_ldate', 'GPU_ldate'],
+        date_parser=dateparse,
+    )
 
 
 def select_targets(data_frame):
@@ -147,6 +154,19 @@ class CombinedFeatures:
     def __call__(self, data_frame):
         r = self.func_([np.array(data_frame[n]) for n in self.selected_names_])
         return np.atleast_2d(r).T
+
+
+class LaunchDateFeatures:
+
+    def __init__(self, name):
+        self.feature_names_ = [name]
+        self.name_ = name
+
+    def __call__(self, data_frame):
+        c = data_frame[self.name_]
+        d = (datetime.date.today() - c.dt.date).dt.days
+        d = np.array(d).astype(np.float)
+        return np.atleast_2d(d).T
 
 
 class SubsetFeatures:
@@ -320,7 +340,6 @@ SELECT_FEATURES = {
                 "CPU_rating",
                 "CPU_tdp",
                 "CPU_price",
-                # Launch date
                 "DISPLAY_size",
                 "DISPLAY_touch",
                 "MEM_cap",
@@ -334,7 +353,6 @@ SELECT_FEATURES = {
                 "GPU_rating",
                 "GPU_power",
                 "GPU_price",
-                # Launch date
                 "WNET_speed",
                 # nr de (antennas) din msc
                 "ODD_price",
@@ -369,6 +387,8 @@ SELECT_FEATURES = {
         ),
         OneHotEncoderFeatures(CPUModelTransformer()),
         OneHotEncoderFeatures(GPUModelTransformer()),
+        LaunchDateFeatures("CPU_ldate"),
+        LaunchDateFeatures("GPU_ldate"),
     ],
     'prices': [
         SubsetFeatures(
@@ -417,7 +437,6 @@ SELECT_FEATURES = {
 class Estimator:
 
     # Estimators
-    # estimator_ = Ridge(alpha=0.1)
     # estimator_ = KernelRidge(alpha=0.1, kernel='rbf', gamma=0.05)
     # estimator_ = KernelRidge(alpha=10, kernel='polynomial', degree=2)
 
