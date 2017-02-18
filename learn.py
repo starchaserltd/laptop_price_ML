@@ -628,7 +628,7 @@ class AdaboostEstimator(Estimator):
         feat_imp = zip(feature_names, estimator.feature_importances_)
         feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
         for feat, imp in feat_imp:
-            print('{:24s} {:.3f}'.format(feat, imp))
+            print('{:40s} {:.3f}'.format(feat, imp))
         print(json.dumps(self.estimator_.best_params_, indent=True, sort_keys=True))
 
 
@@ -660,8 +660,8 @@ class RidgeEstimator(Estimator):
         feat_imp = zip(feature_names, self.estimator_.coef_)
         feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
         for feat, imp in feat_imp:
-            print('{:20s} {:+8.3f}'.format(feat, imp))
-        print('{:20s} {:+8.3f}'.format("bias", self.estimator_.intercept_))
+            print('{:40s} {:+8.3f}'.format(feat, imp))
+        print('{:40s} {:+8.3f}'.format("bias", self.estimator_.intercept_))
 
 
 GET_ESTIMATOR = {
