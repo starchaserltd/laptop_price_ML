@@ -137,6 +137,18 @@ def print_results(results: List[float]):
     print()
 
 
+class CombinedFeatures:
+
+    def __init__(self, name, selected, func):
+        self.feature_names_ = [name]
+        self.selected_names_ = selected
+        self.func_ = func
+
+    def __call__(self, data_frame):
+        r = self.func_([np.array(data_frame[n]) for n in self.selected_names_])
+        return np.atleast_2d(r).T
+
+
 class SubsetFeatures:
 
     def __init__(self, feature_names):
@@ -144,6 +156,7 @@ class SubsetFeatures:
 
     def __call__(self, data_frame):
         return np.array(data_frame[self.feature_names_])
+
 
 class ChassisMadeTransformer:
 
@@ -308,15 +321,9 @@ SELECT_FEATURES = {
                 "CPU_tdp",
                 "CPU_price",
                 # Launch date
-                # hres * vres
-                "DISPLAY_hres",
-                "DISPLAY_vres",
                 "DISPLAY_size",
                 "DISPLAY_touch",
                 "MEM_cap",
-                # freq / lat
-                "MEM_freq",
-                "MEM_lat",
                 "MEM_volt",
                 "HDD_cap",
                 "HDD_readspeed",
@@ -349,6 +356,16 @@ SELECT_FEATURES = {
                 # "MDB_netw",
                 # daca submodel contine WWAN sau nu
             ],
+        ),
+        CombinedFeatures(
+            name="DISPLAY_hres*vres",
+            selected=["DISPLAY_hres", "DISPLAY_vres"],
+            func=lambda xs: xs[0] * xs[1],
+        ),
+        CombinedFeatures(
+            name="MEM_freq/lat",
+            selected=["MEM_freq", "MEM_lat"],
+            func=lambda xs: xs[0] / xs[1],
         ),
         OneHotEncoderFeatures(CPUModelTransformer()),
         OneHotEncoderFeatures(GPUModelTransformer()),
