@@ -3,6 +3,7 @@ import json
 import os
 import pdb
 import random
+import re
 import sys
 
 from typing import (
@@ -145,6 +146,7 @@ class SubsetFeatures:
         return np.array(data_frame[self.feature_names_])
 
 class ChassisMadeTransformer:
+
     def __init__(self):
         self.name = 'CHASSIS_made'
         self.text_to_value_ = {
@@ -166,6 +168,55 @@ class ChassisMadeTransformer:
 
     def __call__(self, v):
         return [self.value_to_id_[self.text_to_value_[w]] for w in v.split(',')]
+
+
+class CPUModelTransformer:
+
+    def __init__(self):
+        self.name = 'CPU_model'
+        self.values = [
+            'other',
+            'atom',
+            'a[0-9]',
+            'i[0-9]',
+            'm[0-9]',
+            'xeon',
+            'pentium',
+            'celeron',
+        ]
+
+    def text_to_id_(self, text):
+        for i, v in enumerate(self.values[1:], 1):
+            if re.match('^{}'.format(v), text.lower()):
+                return i
+        return 0
+
+    def __call__(self, v):
+        return [self.text_to_id_(w) for w in v.split(',')]
+
+
+class GPUModelTransformer:
+
+    def __init__(self):
+        self.name = 'GPU_model'
+        self.values = [
+            'other',
+            'firepro',
+            'geforce',
+            'quadro',
+            'radeon',
+            'iris',
+            'intel',
+        ]
+
+    def text_to_id_(self, text):
+        for i, v in enumerate(self.values[1:], 1):
+            if re.match('^{}'.format(v), text.lower()):
+                return i
+        return 0
+
+    def __call__(self, v):
+        return [self.text_to_id_(w) for w in v.split(',')]
 
 
 class ModelProdTransformer:
