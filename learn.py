@@ -324,7 +324,6 @@ class CPUModelTransformer:
         return [self.text_to_id_(w) for w in v.split(',')]
 
 
-
 class MDBNetwTransformer:
 
     def __init__(self):
@@ -347,6 +346,62 @@ class MDBNetwTransformer:
 
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
+
+
+class MDBInterfaceTransformer:
+
+    def __init__(self):
+        self.name = 'MDB_interface'
+        self.values = [
+            'other',
+            'MXM',
+            'M.2',
+            'none',
+        ]
+        self.matchers = [
+            lambda t: True,
+            lambda t: re.search('MXM', t),
+            lambda t: re.search('M.2', t),
+            lambda t: t == '',
+        ]
+
+    def text_to_ids_(self, text):
+        for i, v in enumerate(self.values[1:], 1):
+            if self.matchers[i](text) :
+                n_times = re.findall('^([0-9]+) X ', text)
+                n_times = int(n_times[0]) if n_times else 1
+                return [i] * n_times
+        return [0]
+
+    def __call__(self, v):
+        return sum([self.text_to_ids_(w) for w in v.split(',')], [])
+
+
+class MDBSubmodelTransformer:
+
+    def __init__(self):
+        self.name = 'MDB_submodel'
+        self.values = [
+            'other',
+            'Standard',
+            'WWAN',
+        ]
+        self.matchers = [
+            lambda t: True,
+            lambda t: re.search('Standard', t),
+            lambda t: re.search('WWAN', t),
+        ]
+
+    def text_to_ids_(self, text):
+        for i, v in enumerate(self.values[1:], 1):
+            if self.matchers[i](text) :
+                n_times = re.findall('^([0-9]+) X ', text)
+                n_times = int(n_times[0]) if n_times else 1
+                return [i] * n_times
+        return [0]
+
+    def __call__(self, v):
+        return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
 class GPUModelTransformer:
@@ -466,8 +521,6 @@ SELECT_FEATURES = {
                 "CHASSIS_weight",
                 # msc
                 "MDB_rating",
-                # "MDB_interface",
-                # daca submodel contine WWAN sau nu
             ],
         ),
         ProcessedFeatures(
@@ -492,6 +545,8 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(ChassisPiTransformer()),
         OneHotEncoderFeatures(ChassisViTransformer()),
         OneHotEncoderFeatures(MDBNetwTransformer()),
+        OneHotEncoderFeatures(MDBInterfaceTransformer()),
+        OneHotEncoderFeatures(MDBSubmodelTransformer()),
         OneHotEncoderFeatures(ModelProdTransformer()),
         LaunchDateFeatures("CPU_ldate"),
         LaunchDateFeatures("GPU_ldate"),
