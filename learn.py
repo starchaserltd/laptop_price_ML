@@ -61,12 +61,14 @@ def remove_ext(filename):
 
 def load_data(name: str) -> DataFrame:
     dateparse = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
-    return read_csv(
+    dataframe = read_csv(
         'data/{}.csv'.format(name),
         sep='|',
         parse_dates=['CPU_ldate', 'GPU_ldate'],
         date_parser=dateparse,
     )
+    dataframe.fillna('', inplace=True)
+    return dataframe
 
 
 def select_targets(data_frame):
@@ -148,11 +150,8 @@ def extract_n_antennas(args):
     n = len(args[0])
     n_antennas = np.zeros(n)
     for i, line in enumerate(args[0]):
-        try:
-            matches = re.findall('([0-9]+) x antennas', line)
-            n_antennas[i] = int(matches[0] or 0)
-        except TypeError:
-            n_antennas[i] = 0
+        matches = re.findall('([0-9]+) x antennas', line)
+        n_antennas[i] = matches[0] if matches else 0
     return n_antennas
 
 
@@ -213,6 +212,49 @@ class ChassisMadeTransformer:
 
     def __call__(self, v):
         return [self.value_to_id_[self.text_to_value_[w]] for w in v.split(',')]
+
+
+class ChassisPiTransformer:
+
+    def __init__(self):
+        self.name = 'CHASSIS_pi'
+        self.values = [
+            'other',
+            'usb',
+            'lan',
+            'rs232',
+            'card-reader',
+            'docking-port',
+            'express-card',
+            'external-graphics-port',
+            'sim-card',
+            'smart-card',
+            'thunderbolt',
+        ]
+        self.matchers = [
+            lambda t: True,
+            lambda t: re.search('USB', t),
+            lambda t: re.search('LAN', t),
+            lambda t: re.search('RS-232', t),
+            lambda t: re.search('card reader', t),
+            lambda t: re.search('Docking port', t),
+            lambda t: re.search('ExpressCard', t),
+            lambda t: re.search('External graphics port', t),
+            lambda t: re.search('SIM card', t),
+            lambda t: re.search('SmartCard', t),
+            lambda t: re.search('Thunderbolt', t) or re.search('OneLink+', t),
+        ]
+
+    def text_to_ids_(self, text):
+        for i, v in enumerate(self.values[1:], 1):
+            if self.matchers[i](text) :
+                n_times = re.findall('^([0-9]+) X ', text)
+                n_times = int(n_times[0]) if n_times else 1
+                return [i] * n_times
+        return [0]
+
+    def __call__(self, v):
+        return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
 class ACUMTipcTransformer:
@@ -299,21 +341,6 @@ class ModelProdTransformer:
         return [self.value_to_id_[v]]
 
 
-# [
-#     'USB'  # USB 3.0 USB 3.0 (Type-C) USB 3.1 USB 3.1 (Type-C)
-#     'LAN'
-#     'RS-232'
-#     'Card reader'  # 2-in-1 card reader 3-in-1 card reader 4-in-1 card reader MicroSD card reader SD card reader SDXC card reader
-#     'Docking port',
-#     'ExpressCard',
-#     'External graphics port',
-#     'SIM card',
-#     'SmartCard',
-#     'Thunderbolt',  # 'OneLink+',
-#     'Other',
-# ],
-
-
 # 1 X DP 1 X mDP 2 X mDP
 # 1 X HDMI 1 X Micro HDMI
 # 1 X VGA
@@ -386,8 +413,6 @@ SELECT_FEATURES = {
                 "CHASSIS_depth",
                 "CHASSIS_width",
                 "CHASSIS_weight",
-                # made
-                # pi
                 # vi
                 # msc
                 "MDB_rating",
@@ -414,6 +439,8 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(CPUModelTransformer()),
         OneHotEncoderFeatures(GPUModelTransformer()),
         OneHotEncoderFeatures(ACUMTipcTransformer()),
+        OneHotEncoderFeatures(ChassisMadeTransformer()),
+        OneHotEncoderFeatures(ChassisPiTransformer()),
         LaunchDateFeatures("CPU_ldate"),
         LaunchDateFeatures("GPU_ldate"),
     ],
