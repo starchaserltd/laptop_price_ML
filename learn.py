@@ -674,33 +674,32 @@ class AdaboostEstimator(Estimator):
         param_dist = {
             "base_estimator__max_depth": [4, 8, 16, 32, 64],
             "base_estimator__splitter": ["best", "random"],
+            "base_estimator__max_features": ["auto", "sqrt", "log2"],
             "n_estimators": [64, 128, 256, 512, 1024],
         }
 
         # run randomized search
-        n_iter_search = 20
+        n_iter_search = 32
         self.estimator_ = RandomizedSearchCV(
             estimator_,
             param_distributions=param_dist,
             n_iter=n_iter_search,
+            n_jobs=3,
             verbose=1,
         )
 
         # Preprocessing
         self.scaler_ = StandardScaler()
-        self.poly_ = PolynomialFeatures()
 
     def fit(self, data_frame):
         X = self._select_features(data_frame)
         y = self._select_targets(data_frame)
         X = self.scaler_.fit_transform(X)
-        # X = self.poly_.fit_transform(X)
         return self.estimator_.fit(X, y)
 
     def predict(self, data_frame):
         X = self._select_features(data_frame)
         X = self.scaler_.transform(X)
-        # X = self.poly_.transform(X)
         return self.estimator_.predict(X)
 
     def print_feature_importance(self):
