@@ -259,6 +259,42 @@ class ChassisPiTransformer:
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
+class ChassisMscTransformer:
+
+    def __init__(self):
+        self.name = 'CHASSIS_msc'
+        self.values = [
+            'other',
+            'premium-speakers',
+            'speakers',
+            'fingerprint',
+            'rear-camera',
+            'legacy',
+            'stylus',
+        ]
+        self.matchers = [
+            lambda t: True,
+            lambda t: any(re.search(s, t) for s in ('JBL', 'Klipsch', 'Bang & Olufsen', 'SonicMaster')),
+            lambda t: re.search('speakers', t),
+            lambda t: re.search('fingerprint reader', t.lower()),
+            lambda t: re.search('Rear camera', t),
+            lambda t: re.search('Legacy', t),
+            lambda t: re.search('Stylus', t),
+        ]
+
+    def text_to_ids_(self, text):
+        for i, v in enumerate(self.values[1:], 1):
+            if self.matchers[i](text) :
+                n_times = re.findall('^([0-9]+)[ ]*[xX]', text)
+                n_times = int(n_times[0]) if n_times else 1
+                return [i] * n_times
+        return [0]
+
+    def __call__(self, v):
+        return sum([self.text_to_ids_(w) for w in v.split(',')], [])
+
+
+
 class ChassisViTransformer:
 
     def __init__(self):
@@ -319,6 +355,28 @@ class CPUModelTransformer:
             if re.match('^{}'.format(v), text.lower()):
                 return i
         return 0
+
+    def __call__(self, v):
+        return [self.text_to_id_(w) for w in v.split(',')]
+
+class SISTSistTransformeer:
+
+    def __init__(self):
+        self.name = 'SIST_sist'
+        self.values = [
+            "Android",
+            "Chrome OS",
+            "Linux Ubuntu",
+            "No OS",
+            "Windows",
+            "macOS",
+        ]
+
+    def text_to_id_(self, text):
+        for i, v in enumerate(self.values):
+            if re.match('^{}'.format(v), text):
+                return i
+        assert False
 
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
@@ -508,7 +566,7 @@ SELECT_FEATURES = {
                 "SHDD_writes",
                 "GPU_rating",
                 "GPU_power",
-                "GPU_price",
+                # "GPU_price",
                 "WNET_speed",
                 "ODD_price",
                 "ACUM_cap",
@@ -519,7 +577,6 @@ SELECT_FEATURES = {
                 "CHASSIS_depth",
                 "CHASSIS_width",
                 "CHASSIS_weight",
-                # msc
                 "MDB_rating",
             ],
         ),
@@ -544,9 +601,11 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(ChassisMadeTransformer()),
         OneHotEncoderFeatures(ChassisPiTransformer()),
         OneHotEncoderFeatures(ChassisViTransformer()),
+        OneHotEncoderFeatures(ChassisMscTransformer()),
         OneHotEncoderFeatures(MDBNetwTransformer()),
         OneHotEncoderFeatures(MDBInterfaceTransformer()),
         OneHotEncoderFeatures(MDBSubmodelTransformer()),
+        OneHotEncoderFeatures(SISTSistTransformeer()),
         OneHotEncoderFeatures(ModelProdTransformer()),
         LaunchDateFeatures("CPU_ldate"),
         LaunchDateFeatures("GPU_ldate"),
