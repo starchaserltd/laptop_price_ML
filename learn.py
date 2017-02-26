@@ -49,6 +49,8 @@ from sklearn.preprocessing import (
 
 from sklearn.svm import SVR
 
+from xgboost import XGBRegressor
+
 
 SEED = 1337
 np.random.seed(SEED)
@@ -811,11 +813,54 @@ class RidgeEstimator(Estimator):
         print('{:40s} {:+8.3f}'.format("bias", self.estimator_.intercept_))
 
 
+class XGBoostEstimator(Estimator):
+
+    def __init__(self, select_features_list):
+        self.select_features_list_ = select_features_list
+
+        estimator_ = XGBRegressor()
+        param_dist = {
+            "max_depth": [4, 8, 16, 32],
+            "learning_rate": [0.01, 0.1, 1.0],
+            "n_estimators": [16, 32, 64, 128, 256, 512],
+        }
+
+        n_iter_search = 32
+        self.estimator_ = RandomizedSearchCV(
+            estimator_,
+            param_distributions=param_dist,
+            n_iter=n_iter_search,
+            scoring=scorer,
+            n_jobs=1,
+            verbose=1,
+        )
+
+    def fit(self, data_frame):
+        X = self._select_features(data_frame)
+        y = self._select_targets(data_frame)
+        return self.estimator_.fit(X, y)
+
+    def predict(self, data_frame):
+        X = self._select_features(data_frame)
+        return self.estimator_.predict(X)
+
+    def print_feature_importance(self):
+        estimator = self.estimator_.best_estimator_
+        feature_names = sum([s.feature_names_ for s in self.select_features_list_], [])
+        feat_imp = zip(feature_names, estimator.feature_importances_)
+        feat_imp = sorted(feat_imp, key=lambda t: t[1], reverse=True)
+        for feat, imp in feat_imp:
+            print('{:40s} {:.6f}'.format(feat, imp))
+        print(self.estimator_.best_score_)
+        print(json.dumps(self.estimator_.best_params_, indent=True, sort_keys=True))
+
+
 GET_ESTIMATOR = {
     'baseline': PrecomputedEstimator,
     'adaboost': AdaboostEstimator,
     'ridge': RidgeEstimator,
     'svr': SVREstimator,
+    'xgb': XGBoostEstimator,
 }
 
 
