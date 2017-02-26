@@ -869,11 +869,13 @@ class SVREstimator(Estimator):
         }
 
         # run randomized search
-        n_iter_search = 20
+        n_iter_search = 32
         self.estimator_ = RandomizedSearchCV(
             estimator_,
             param_distributions=param_dist,
             n_iter=n_iter_search,
+            scoring=scorer,
+            n_jobs=3,
             verbose=1,
         )
 
@@ -951,25 +953,26 @@ class RidgeEstimator(Estimator):
 
     def __init__(self, select_features_list):
         self.select_features_list_ = select_features_list
-        self.estimator_ = Ridge(alpha=10)
+        self.estimator_ = Ridge(alpha=100)
         # Preprocessing
         self.scaler_ = StandardScaler()
-        # self.poly_ = PolynomialFeatures(degree=2)
+        self.poly_ = PolynomialFeatures(degree=2)
 
     def fit(self, data_frame):
         X = self._select_features(data_frame)
         X = self.scaler_.fit_transform(X)
-        # X = self.poly_.fit_transform(X)
+        X = self.poly_.fit_transform(X)
         y = self._select_targets(data_frame)
         return self.estimator_.fit(X, y)
 
     def predict(self, data_frame):
         X = self._select_features(data_frame)
         X = self.scaler_.transform(X)
-        # X = self.poly_.transform(X)
+        X = self.poly_.transform(X)
         return self.estimator_.predict(X)
 
     def print_feature_importance(self):
+        return
         feature_names = sum([s.feature_names_ for s in self.select_features_list_], [])
         assert len(feature_names) == len(self.estimator_.coef_)
         feat_imp = zip(feature_names, self.estimator_.coef_)
