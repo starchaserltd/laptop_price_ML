@@ -110,6 +110,7 @@ def evaluate_fold(classifier, data: DataFrame, idxs: Any, verbose: int=0) -> flo
     if verbose:
         print_predictions(tr_data, tr_preds, verbose - 1)
         print_predictions(te_data, te_preds, verbose - 1)
+        save_predictions(te_data, te_preds)
         classifier.print_feature_importance()
 
     tr_error = mean_rel_error(select_targets(tr_data), tr_preds)
@@ -140,15 +141,28 @@ def print_model(data, model_id, classifier):
 def print_predictions(data, preds, verbose):
     relative_errors = rel_error(select_targets(data), preds)
     absolute_errors = np.abs(select_targets(data) - preds)
-    print(describe(absolute_errors))
+    print(describe(relative_errors))
+    print('Number of configurations with error greater than 10%')
+    print(sum(relative_errors > 10))
+    print(sum(relative_errors > 20))
+    print(sum(relative_errors > 30))
     if verbose:
-        print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(i, id_, r_price, p_price, pred, rel_e, abs_e)
-            for i, (id_, r_price, p_price, pred, rel_e, abs_e) in enumerate(zip(np.array(data.id), data.realprice, data.price, preds, relative_errors, absolute_errors))
-            if rel_e > 50))
+        print('\n'.join('{:4d} {:10d} {:10d} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(i, id_, model, r_price, p_price, pred, rel_e, abs_e)
+            for i, (id_, model, r_price, p_price, pred, rel_e, abs_e) in enumerate(zip(np.array(data.id), data.model, data.realprice, data.price, preds, relative_errors, absolute_errors))
+            if rel_e > 30))
+            # ))
         # print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:32s} {:10.2f}'.format(i, j, t, p, s, e)
         #    for i, (j, t, p, s, e) in enumerate(zip(np.array(data.id), data.realprice - data.price, preds, data.CHASSIS_made, errors))
         #    if e > 10))
 
+
+def save_predictions(data, preds):
+    relative_errors = rel_error(select_targets(data), preds)
+    with open('/tmp/test_predictions.csv', 'a') as f:
+        for id_, model, r_price, pred, rel_e in zip(np.array(data.id), data.model, data.realprice, preds, relative_errors):
+            if rel_e <= 30:
+                continue
+            f.write('{:d},{:d},{:.2f},{:.2f},{:.2f}\n'.format(model, id_, r_price, pred, rel_e))
 
 
 def print_results(results: List[float]):
@@ -888,6 +902,7 @@ def main():
     )
     args = parser.parse_args()
 
+    os.remove('/tmp/test_predictions.csv')
     classifier = GET_ESTIMATOR[args.estimator](SELECT_FEATURES[args.features])
     data = load_data('data/{}.csv'.format(args.data))
     tr_errors, te_errors = evaluate(classifier, data, 2)
