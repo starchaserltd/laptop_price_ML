@@ -232,6 +232,7 @@ class ChassisMadeTransformer:
             "Magnesium aluminium alloy": "magnesium",
             "Metal": "aluminium",
             "Plastic": "plastic",
+            "Rubber": "rubber",
             "Shock-absorbing ultra-polymer": "polymer",
             "Steel reinforcements": "other",
         }
@@ -320,7 +321,6 @@ class ChassisMscTransformer:
 
     def __call__(self, v):
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
-
 
 
 class ChassisViTransformer:
@@ -531,6 +531,7 @@ class ModelProdTransformer:
             "MSI",
             "Razer",
             "Samsung",
+            "Panasonic",
         ]
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
@@ -550,6 +551,25 @@ class OneHotEncoderFeatures:
         for i, ids in enumerate(I):
             for j in ids:
                 X[i, j] = 1
+        return X
+
+
+class ExtractIP:
+
+    def __init__(self):
+        self.name = 'CHASSIS_msc'
+        self.values = ['IP']
+        self.feature_names_ = [self.name + ':' + v for v in self.values]
+
+    def extract_ip_(self, text):
+        for word in text.split(','):
+            matches = re.findall('IP(\d+)', text)
+            if matches:
+                return int(matches[0])
+        return 0
+
+    def __call__(self, data_frame):
+        X = np.atleast_2d([self.extract_ip_(m) for m in data_frame[self.name]]).T
         return X
 
 
@@ -635,6 +655,133 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(MDBSubmodelTransformer()),
         OneHotEncoderFeatures(SISTSistTransformeer()),
         OneHotEncoderFeatures(ModelProdTransformer()),
+        LaunchDateFeatures("CPU_ldate"),
+        LaunchDateFeatures("GPU_ldate"),
+        ExtractIP(),
+    ],
+    'prices': [
+        SubsetFeatures(
+            [
+                "CPU_rating",
+                "GPU_rating",
+                "CPU_price",
+                "GPU_price",
+                "ACUM_price",
+                "DISPLAY_price",
+                "HDD_price",
+                "MEM_price",
+                "ODD_price",
+                "SIST_price",
+                "WAR_price",
+                "WNET_price",
+                "MDB_rating",
+                # "CHASSIS_rating",
+                "CHASSIS_width",
+                "CHASSIS_weight",
+                "CHASSIS_thic",
+            ],
+        ),
+        OneHotEncoderFeatures(ModelProdTransformer()),
+    ],
+    'mdb+chassis': [
+        SubsetFeatures(
+            [
+                # "price",
+                # "CHASSIS_rating",
+                "MDB_rating",
+                "CHASSIS_thic",
+                "CHASSIS_depth",
+                "CHASSIS_width",
+                "CHASSIS_weight",
+                # "CHASSIS_msc",
+                # "CHASSIS_vi",
+            ],
+        ),
+        OneHotEncoderFeatures(ChassisMadeTransformer()),
+        # OneHotEncoderFeatures("CHASSIS_pi"),
+    ],
+    'numeric.1': [
+        SubsetFeatures(
+            [
+                "CPU_rating",
+                "CPU_tdp",
+                "GPU_rating",
+                "GPU_power",
+                "ACUM_rating",
+                "CHASSIS_thic",
+                "CHASSIS_weight",
+                "CHASSIS_rating",
+                "DISPLAY_rating",
+                "HDD_rating",
+                "MDB_rating",
+                "MEM_rating",
+                "ODD_price",
+                "SIST_price",
+                "WAR_rating",
+                "WNET_rating",
+            ],
+        ),
+    ],
+    'silviu.1': [
+        SubsetFeatures(
+            [
+                "CPU_rating",
+                "CPU_tdp",
+                "CPU_price",
+                "DISPLAY_size",
+                "DISPLAY_touch",
+                "MEM_cap",
+                "MEM_volt",
+                "HDD_cap",
+                "HDD_readspeed",
+                "HDD_writes",
+                "SHDD_cap",
+                "SHDD_readspeed",
+                "SHDD_writes",
+                "GPU_rating",
+                "GPU_power",
+                # "GPU_price",
+                "WNET_speed",
+                "ODD_price",
+                "ACUM_cap",
+                "WAR_years",
+                "WAR_typewar",
+                "SIST_price",
+                "CHASSIS_thic",
+                "CHASSIS_depth",
+                "CHASSIS_width",
+                "CHASSIS_weight",
+                "MDB_rating",
+            ],
+        ),
+        ProcessedFeatures(
+            name="DISPLAY_hres*vres",
+            selected=["DISPLAY_hres", "DISPLAY_vres"],
+            func=lambda xs: xs[0] * xs[1],
+        ),
+        ProcessedFeatures(
+            name="MEM_freq/lat",
+            selected=["MEM_freq", "MEM_lat"],
+            func=lambda xs: xs[0] / xs[1],
+        ),
+        ProcessedFeatures(
+            name="WNET_n_antennas",
+            selected=["WNET_msc"],
+            func=extract_n_antennas,
+        ),
+        OneHotEncoderFeatures(CPUModelTransformer()),
+        OneHotEncoderFeatures(GPUModelTransformer()),
+        OneHotEncoderFeatures(ACUMTipcTransformer()),
+        OneHotEncoderFeatures(ChassisMadeTransformer()),
+        OneHotEncoderFeatures(ChassisPiTransformer()),
+        OneHotEncoderFeatures(ChassisViTransformer()),
+        OneHotEncoderFeatures(ChassisMscTransformer()),
+        OneHotEncoderFeatures(MDBNetwTransformer()),
+        OneHotEncoderFeatures(MDBInterfaceTransformer()),
+        OneHotEncoderFeatures(MDBSubmodelTransformer()),
+        OneHotEncoderFeatures(SISTSistTransformeer()),
+        OneHotEncoderFeatures(ModelProdTransformer()),
+        ExtractIP(),
         LaunchDateFeatures("CPU_ldate"),
         LaunchDateFeatures("GPU_ldate"),
     ],
