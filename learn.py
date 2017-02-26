@@ -37,6 +37,7 @@ from sklearn.linear_model import (
 
 from sklearn.model_selection import (
     train_test_split,
+    KFold,
     RandomizedSearchCV,
 )
 
@@ -86,9 +87,11 @@ def mean_rel_error(true_values, estimated_values):
     return np.mean(rel_error(xs, ys))
 
 
-def evaluate_fold(classifier, data: DataFrame, i: int, verbose: int=0) -> float:
-    idxs = np.arange(len(data))
-    tr_idxs, te_idxs = train_test_split(idxs, test_size=300, random_state=i)
+
+def evaluate_fold(classifier, data: DataFrame, idxs: Any, verbose: int=0) -> float:
+    # idxs = np.arange(len(data))
+    # tr_idxs, te_idxs = train_test_split(idxs, test_size=300, random_state=i)
+    tr_idxs, te_idxs = idxs
 
     tr_data = data.iloc[tr_idxs]
     te_data = data.iloc[te_idxs]
@@ -109,7 +112,12 @@ def evaluate_fold(classifier, data: DataFrame, i: int, verbose: int=0) -> float:
 
 
 def evaluate(classifier, data: DataFrame, verbose: int=0):
-    return zip(*[evaluate_fold(classifier, data, i, verbose) for i in range(3)])
+    results = []
+    kf = KFold(n_splits=6, shuffle=True, random_state=SEED)
+    for idxs in kf.split(np.arange(len(data))):
+        results.append(evaluate_fold(classifier, data, idxs, verbose))
+    return zip(*results)
+    # return zip(*[evaluate_fold(classifier, data, i, verbose) for i in range(3)])
 
 
 def print_model(data, model_id, classifier):
