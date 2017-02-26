@@ -89,6 +89,10 @@ def mean_rel_error(true_values, estimated_values):
     return np.mean(rel_error(xs, ys))
 
 
+def scorer(estimator, X, y):
+    # return sum(rel_error(y, estimator.predict(X)) < 30) / len(y)
+    return 100 - mean_rel_error(y, estimator.predict(X))
+
 
 def evaluate_fold(classifier, data: DataFrame, idxs: Any, verbose: int=0) -> float:
     # idxs = np.arange(len(data))
@@ -753,6 +757,7 @@ class AdaboostEstimator(Estimator):
             estimator_,
             param_distributions=param_dist,
             n_iter=n_iter_search,
+            scoring=scorer,
             n_jobs=3,
             verbose=1,
         )
