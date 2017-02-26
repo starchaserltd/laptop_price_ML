@@ -62,10 +62,10 @@ def remove_ext(filename):
     return name
 
 
-def load_data(name: str) -> DataFrame:
+def load_data(path: str) -> DataFrame:
     dateparse = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
     dataframe = read_csv(
-        'data/{}.csv'.format(name),
+        path,
         sep='|',
         parse_dates=['CPU_ldate', 'GPU_ldate'],
         date_parser=dateparse,
@@ -884,7 +884,7 @@ def main():
     args = parser.parse_args()
 
     classifier = GET_ESTIMATOR[args.estimator](SELECT_FEATURES[args.features])
-    data = load_data(args.data)
+    data = load_data('data/{}.csv'.format(args.data))
     tr_errors, te_errors = evaluate(classifier, data, 2)
 
     print('Tr:', end=' ')
