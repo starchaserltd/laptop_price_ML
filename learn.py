@@ -57,6 +57,11 @@ np.random.seed(SEED)
 random.seed(SEED)
 
 
+def rm(path):
+    if os.path.exists(path):
+        os.remove(path)
+
+
 def remove_ext(filename):
     name, _ = os.path.splitext(filename)
     return name
@@ -1052,7 +1057,7 @@ def main():
     )
     args = parser.parse_args()
 
-    os.remove('/tmp/test_predictions.csv')
+    rm('/tmp/test_predictions.csv')
     classifier = GET_ESTIMATOR[args.estimator](SELECT_FEATURES[args.features])
     data = load_data('data/{}.csv'.format(args.data))
     tr_errors, te_errors = evaluate(classifier, data, 2)
