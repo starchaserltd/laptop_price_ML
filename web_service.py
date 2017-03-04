@@ -5,6 +5,7 @@ import logging
 import pdb
 import pickle
 import re
+import time
 
 from flask import (
     Flask,
@@ -14,6 +15,13 @@ from flask import (
 from functools import partial
 
 import numpy as np
+
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+)
 
 from learn import (
     load_classifier,
@@ -31,6 +39,7 @@ from pandas import (
 from sqlalchemy.engine import create_engine
 
 from urllib.parse import quote_plus as urlquote
+
 
 
 def create_sql_engine(host, port, username, password, db):
@@ -76,23 +85,25 @@ def create_column_names():
         handle_special_case(i) + '_' + c
         for i in sorted(ID_TO_TABLE_NAME.keys())
         for c in tables[ID_TO_TABLE_NAME[i]].columns.values
+        if c != 'id'
     ]
 
 
-def ids_to_data_frame(ids):
+def group_ids(list_of_ids: List[Dict[str, Any]]) -> Dict[str, List[Any]]:
+    return {t: [ids[t] for ids in list_of_ids] for t in ID_TO_TABLE_NAME.keys()}
+
+
+def ids_to_data_frame(list_of_ids):
     column_names = create_column_names()
+    name_to_ids = group_ids(list_of_ids)
     data_frame = pandas.concat(
         [
-            pandas.concat(
-                [
-                    tables[ID_TO_TABLE_NAME[id_]].ix[curr_ids[id_]]
-                    for id_ in sorted(ID_TO_TABLE_NAME.keys())
-                ],
-            )
-            for curr_ids in ids
+            tables[ID_TO_TABLE_NAME[id_]].ix[name_to_ids[id_]].reset_index(drop=True)
+            for id_ in sorted(ID_TO_TABLE_NAME.keys())
         ],
-        axis=1)
-    data_frame = data_frame.transpose()
+        ignore_index=True,
+        axis=1,
+    )
     data_frame.columns = column_names
     data_frame.fillna('', inplace=True)
     return data_frame
@@ -112,6 +123,7 @@ def predict():
     predictions = classifier.predict(data)
     predictions = ['{:.2f}'.format(p) for p in predictions]
 
+    print(end - start)
     json_data = json.dumps(predictions, indent=4)
     return json_data, 200
 
