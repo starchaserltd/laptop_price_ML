@@ -1,6 +1,6 @@
 import argparse
 import datetime
-import dill as pickle
+import dill as pickle  # type: ignore
 import json
 import os
 import pdb
@@ -10,10 +10,11 @@ import sys
 
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
     Optional,
-    Callable,
+    Tuple,
 )
 
 import numpy as np  # type: ignore
@@ -100,7 +101,7 @@ def scorer(estimator, X, y):
     return 100 - mean_rel_error(y, estimator.predict(X))
 
 
-def evaluate_fold(classifier, data: DataFrame, idxs: Any, verbose: int=0) -> float:
+def evaluate_fold(classifier, data: DataFrame, idxs: Any, verbose: int=0) -> Tuple[float, float]:
     # idxs = np.arange(len(data))
     # tr_idxs, te_idxs = train_test_split(idxs, test_size=300, random_state=i)
     tr_idxs, te_idxs = idxs
