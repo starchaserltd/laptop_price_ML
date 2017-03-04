@@ -8,10 +8,18 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Set database credentials:
+Create a JSON file `credentials.json` containing the database credentials:
 
 ```
-export DATABASE_URL=xxx
+{
+    "database": {
+        "host": xxx,
+        "port": xxx,
+        "username": xxx,
+        "password": xxx,
+        "db": xxx
+    }
+}
 ```
 
 Start and test the prediction web-service:
