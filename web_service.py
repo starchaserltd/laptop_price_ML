@@ -75,6 +75,7 @@ ID_TO_TABLE_NAME['SHDD'] = 'HDD'
 
 
 classifier = load_classifier('models/classifier.pickle')
+classifier.nthread = int(os.environ.get('NOTEB_PRICE_NTHREAD', 8))
 sql_engine = create_sql_engine(**json.load(open('credentials.json', 'r')).get('database'))
 tables = {table_name: load_sql_table(table_name, sql_engine) for table_name in TABLE_NAMES}
 
@@ -123,7 +124,6 @@ def predict():
     predictions = classifier.predict(data)
     predictions = ['{:.2f}'.format(p) for p in predictions]
 
-    print(end - start)
     json_data = json.dumps(predictions, indent=4)
     return json_data, 200
 
