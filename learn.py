@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import dill as pickle
 import json
 import os
 import pdb
@@ -1037,9 +1038,25 @@ GET_ESTIMATOR = {
     'xgb': XGBoostEstimator,
 }
 
+def save_classifier(path, classifier):
+    with open(path, 'wb') as f:
+        pickle.dump(classifier, f)
+
+
+def load_classifier(path):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Learn a predictive function for price estimation.')
+    parser.add_argument(
+        '-t', '--todo',
+        choices=['evaluate', 'train'],
+        default=[],
+        nargs='+',
+        help='what to do',
+    )
     parser.add_argument(
         '-e', '--estimator',
         choices=GET_ESTIMATOR.keys(),
@@ -1060,13 +1077,19 @@ def main():
     rm('/tmp/test_predictions.csv')
     classifier = GET_ESTIMATOR[args.estimator](SELECT_FEATURES[args.features])
     data = load_data('data/{}.csv'.format(args.data))
-    tr_errors, te_errors = evaluate(classifier, data, 2)
 
-    print('Tr:', end=' ')
-    print_results(tr_errors)
+    if 'evaluate' in args.todo:
+        tr_errors, te_errors = evaluate(classifier, data, 2)
 
-    print('Te:', end=' ')
-    print_results(te_errors)
+        print('Tr:', end=' ')
+        print_results(tr_errors)
+
+        print('Te:', end=' ')
+        print_results(te_errors)
+
+    if 'train' in args.todo:
+        classifier.fit(data)
+        save_classifier('models/classifier.pickle'.format(), classifier)
 
 
 if __name__ == '__main__':
