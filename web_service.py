@@ -14,6 +14,8 @@ from flask import (
 
 from functools import partial
 
+from logging import config as cfg
+
 import numpy as np
 
 from typing import (
@@ -21,12 +23,6 @@ from typing import (
     Callable,
     Dict,
     List,
-)
-
-from learn import (
-    load_classifier,
-    load_data,
-    RidgeEstimator,
 )
 
 import pandas
@@ -40,6 +36,13 @@ from sqlalchemy.engine import create_engine
 
 from urllib.parse import quote_plus as urlquote
 
+from learn import (
+    load_classifier,
+    load_data,
+    RidgeEstimator,
+)
+
+from utils import wrap_exceptions
 
 
 def create_sql_engine(host, port, username, password, db):
@@ -111,9 +114,13 @@ def ids_to_data_frame(list_of_ids):
 
 
 app = Flask(__name__)
+cfg.fileConfig('web_service.conf')
+logger = logging.getLogger('web-service')
 
+wrap_exceptions_logger = partial(wrap_exceptions, logger=logger)
 
 @app.route('/predict', methods=['POST'])
+@wrap_exceptions_logger
 def predict():
     ids = request.get_json(force=True)['ids']
     if ids is None or len(ids) == 0:
