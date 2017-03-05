@@ -22,6 +22,8 @@ Create a JSON file `credentials.json` containing the database credentials:
 }
 ```
 
+## Usage
+
 Start and test the prediction web-service:
 
 ```
@@ -29,7 +31,8 @@ python web_service.py
 python test_web_service.py
 ```
 
+Train new models:
 
-## TODO
-
-- [ ] Save classifier to disk
+```
+python learn.py -t evaluate train -e xgb -f silviu.1 -d pricing-02-03-2017
+```
