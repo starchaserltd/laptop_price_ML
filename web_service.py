@@ -127,10 +127,15 @@ def predict():
     if ids is None or len(ids) == 0:
         return "Bad request, header Content-type should be 'binary/octet-stream' ", 400
 
-    data = ids_to_data_frame(ids)
-    # data = load_data('data/pricing-01-03-2017.csv')
-    predictions = classifier.predict(data)
-    predictions = ['{:.2f}'.format(p) for p in predictions]
+    try:
+        data = ids_to_data_frame(ids)
+        # data = load_data('data/pricing-01-03-2017.csv')
+        predictions = classifier.predict(data)
+        predictions = ['{:.2f}'.format(p) for p in predictions]
+    except Exception as e:
+        print(e)
+        warnings.warn("WARN All prices set to -1")
+        predictions = ['-1' for _ in len(ids)]
 
     json_data = json.dumps(predictions, indent=4)
     return json_data, 200
