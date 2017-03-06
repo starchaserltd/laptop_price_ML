@@ -198,10 +198,10 @@ def wrap_key_error(func):
         try:
             return func(self, value)
         except KeyError:
-            warnings.warn("Missing value {} for field {}. Available values: {}".format(
+            print("WARN Missing value {} for field {}. Available values: {}".format(
                 value,
                 self.name,
-                self.values,
+                ', '.join(self.values),
             ))
             return []
     return func_wrapper
