@@ -24,7 +24,7 @@ model_to_errors = load_data(path)
 model_to_errors = {m: process_errors(xs) for m, xs in model_to_errors.items()}
 model_errors = sorted(model_to_errors.items(), key=lambda kv: (kv[1][1], kv[1][0]), reverse=True)
 
-with open('/tmp/difficult_models.csv', 'w') as csvfile:
+with open('data/difficult_models.csv', 'w') as csvfile:
     csvwriter = csv.writer(csvfile, delimiter=',')
     for model, errors in model_errors:
         csvwriter.writerow((model, ) + errors)
