@@ -414,7 +414,7 @@ class CPUModelTransformer:
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
 
-class SISTSistTransformeer:
+class SISTSistTransformer:
 
     def __init__(self):
         self.name = 'SIST_sist'
@@ -558,9 +558,11 @@ class ModelProdTransformer:
             "HP",
             "Lenovo",
             "MSI",
+            "Microsoft",
             "Razer",
             "Samsung",
             "Panasonic",
+            "VAIO",
         ]
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
@@ -746,7 +748,7 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(MDBNetwTransformer()),
         OneHotEncoderFeatures(MDBInterfaceTransformer()),
         OneHotEncoderFeatures(MDBSubmodelTransformer()),
-        OneHotEncoderFeatures(SISTSistTransformeer()),
+        OneHotEncoderFeatures(SISTSistTransformer()),
         OneHotEncoderFeatures(ModelProdTransformer()),
         ExtractIP(),
         LaunchDateFeatures("CPU_ldate"),
