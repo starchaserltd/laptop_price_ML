@@ -1,12 +1,14 @@
 import argparse
 import datetime
 import dill as pickle  # type: ignore
+import functools
 import json
 import os
 import pdb
 import random
 import re
 import sys
+import warnings
 
 from typing import (
     Any,
@@ -190,6 +192,21 @@ def extract_n_antennas(args):
     return n_antennas
 
 
+def wrap_key_error(func):
+    @functools.wraps(func)
+    def func_wrapper(self, value):
+        try:
+            return func(self, value)
+        except KeyError:
+            warnings.warn("Missing value {} for field {}. Available values: {}".format(
+                value,
+                self.name,
+                self.values,
+            ))
+            return []
+    return func_wrapper
+
+
 class ProcessedFeatures:
 
     def __init__(self, name, selected, func):
@@ -246,6 +263,7 @@ class ChassisMadeTransformer:
         self.values = sorted(list(set(self.text_to_value_.values())))
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
+    @wrap_key_error
     def __call__(self, v):
         return [self.value_to_id_[self.text_to_value_[w]] for w in v.split(',')]
 
@@ -353,8 +371,9 @@ class ChassisViTransformer:
                 n_times = re.findall('^([0-9]+) X ', text)
                 n_times = int(n_times[0]) if n_times else 1
                 return [i] * n_times
-        assert False
+        raise KeyError
 
+    @wrap_key_error
     def __call__(self, v):
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
@@ -366,6 +385,7 @@ class ACUMTipcTransformer:
         self.values = ["Li-Ion", "Li-Pol"]
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
+    @wrap_key_error
     def __call__(self, v):
         return [self.value_to_id_[v]]
 
@@ -411,8 +431,9 @@ class SISTSistTransformeer:
         for i, v in enumerate(self.values):
             if re.match('^{}'.format(v), text):
                 return i
-        assert False
+        raise KeyError
 
+    @wrap_key_error
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
 
@@ -435,8 +456,9 @@ class MDBNetwTransformer:
         for i, v in enumerate(self.values):
             if re.match('^{}'.format(v), text):
                 return i
-        assert False
+        raise KeyError
 
+    @wrap_key_error
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
 
@@ -542,6 +564,7 @@ class ModelProdTransformer:
         ]
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
+    @wrap_key_error
     def __call__(self, v):
         return [self.value_to_id_[v]]
 
