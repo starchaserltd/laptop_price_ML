@@ -55,7 +55,7 @@ REFERENCE_NAMES = [
 ]
 new_name = sys.argv[1]
 
-data1 = [load_conf_data(get_data_path(p), get_conf_path(p))[1] for p in REFERENCE_NAMES]
+data1 = sum([load_conf_data(get_data_path(p), get_conf_path(p))[1] for p in REFERENCE_NAMES], [])
 rows2, data2 = load_conf_data(get_data_path(new_name), '/tmp/test_predictions.csv')
 sel_rows = [row for row, datum in zip(rows2, data2) if datum not in data1]
 
