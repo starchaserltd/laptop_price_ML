@@ -21,8 +21,40 @@ ids = [
         "SHDD": 0,
         "WAR": 1,
         "WNET": 35,
-    }
-] * 10
+    },
+    {
+        "ACUM": 26,
+        "CHASSIS": 38,
+        "CPU": 136,
+        "DISPLAY": 71,
+        "GPU": 32,
+        "HDD": 29,
+        "MODEL": 7,
+        "MDB": 35,
+        "MEM": 24,
+        "ODD": 0,
+        "SIST": 1,
+        "SHDD": 0,
+        "WAR": 1,
+        "WNET": 41,
+    },
+    {
+        "ACUM": 26,
+        "CHASSIS": 38,
+        "CPU": 136,
+        "DISPLAY": 71,
+        "GPU": 32,
+        "HDD": 29,
+        "MODEL": 7,
+        "MDB": 35,
+        "MEM": 24,
+        "ODD": 0,
+        "SIST": 2,
+        "SHDD": 0,
+        "WAR": 1,
+        "WNET": 41,
+    },
+]
 
 response = requests.post(URL, data=json.dumps(dict(ids=ids)))
 print(response.status_code)
