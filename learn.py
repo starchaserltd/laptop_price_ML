@@ -241,7 +241,13 @@ class SubsetFeatures:
         return np.array(data_frame[self.feature_names_])
 
 
-class ChassisMadeTransformer:
+class BaseTransformer:
+
+    def get_column(self, data_frame):
+        return data_frame[self.name]
+
+
+class ChassisMadeTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'CHASSIS_made'
@@ -268,7 +274,7 @@ class ChassisMadeTransformer:
         return [self.value_to_id_[self.text_to_value_[w]] for w in v.split(',')]
 
 
-class ChassisPiTransformer:
+class ChassisPiTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'CHASSIS_pi'
@@ -313,7 +319,7 @@ class ChassisPiTransformer:
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
-class ChassisMscTransformer:
+class ChassisMscTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'CHASSIS_msc'
@@ -348,7 +354,7 @@ class ChassisMscTransformer:
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
-class ChassisViTransformer:
+class ChassisViTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'CHASSIS_vi'
@@ -378,7 +384,7 @@ class ChassisViTransformer:
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
-class ACUMTipcTransformer:
+class ACUMTipcTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'ACUM_tipc'
@@ -390,7 +396,7 @@ class ACUMTipcTransformer:
         return [self.value_to_id_[v]]
 
 
-class CPUModelTransformer:
+class CPUModelTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'CPU_model'
@@ -414,7 +420,8 @@ class CPUModelTransformer:
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
 
-class SISTSistTransformer:
+
+class SISTSistTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'SIST_sist'
@@ -438,7 +445,70 @@ class SISTSistTransformer:
         return [self.text_to_id_(w) for w in v.split(',')]
 
 
-class MDBNetwTransformer:
+class SISTSistTypeTransformer(BaseTransformer):
+
+    def __init__(self):
+        self.name = 'SIST_sist+type'
+        self.values = [
+            "Android",
+            "Chrome OS",
+            "Linux Ubuntu",
+            "No OS",
+            "Windows Home",
+            "Windows Pro",
+            "macOS",
+        ]
+
+    def text_to_id_(self, text):
+        for i, v in enumerate(self.values):
+            if re.match('^{}'.format(v), text):
+                return i
+        raise KeyError
+
+    def get_column(self, data_frame):
+        return data_frame[['SIST_sist', 'SIST_type']].apply(lambda x: ' '.join(x), axis=1)
+
+    @wrap_key_error
+    def __call__(self, v):
+        return [self.text_to_id_(v)]
+
+
+class BusinessFamilyTransformer(BaseTransformer):
+
+    def __init__(self):
+        self.name = 'business_fam'
+        self.values = [
+            "n",
+            "y",
+        ]
+        self.business_families = [
+            "latitude",
+            "precision",
+            "elite",
+            "proBook",
+            "zbook",
+            "thinkpad",
+            "productivity",
+            "workstation",
+            "asuspro",
+            "travelmate",
+        ]
+
+    def get_column(self, data_frame):
+        return data_frame['model_fam']
+
+    def text_to_id_(self, text):
+        for v in self.business_families:
+            if re.match('^{}'.format(v), text.lower()):
+                return 1
+        return 0
+
+    @wrap_key_error
+    def __call__(self, v):
+        return [self.text_to_id_(v)]
+
+
+class MDBNetwTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'MDB_netw'
@@ -463,7 +533,7 @@ class MDBNetwTransformer:
         return [self.text_to_id_(w) for w in v.split(',')]
 
 
-class MDBInterfaceTransformer:
+class MDBInterfaceTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'MDB_interface'
@@ -492,7 +562,7 @@ class MDBInterfaceTransformer:
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
-class MDBSubmodelTransformer:
+class MDBSubmodelTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'MDB_submodel'
@@ -519,7 +589,7 @@ class MDBSubmodelTransformer:
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
-class GPUModelTransformer:
+class GPUModelTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'GPU_model'
@@ -543,7 +613,7 @@ class GPUModelTransformer:
         return [self.text_to_id_(w) for w in v.split(',')]
 
 
-class ModelProdTransformer:
+class ModelProdTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'model_prod'
@@ -578,7 +648,7 @@ class OneHotEncoderFeatures:
         self.feature_names_ = [transformer.name + ':' + v for v in transformer.values]
 
     def __call__(self, data_frame):
-        I = [self.transformer_(m) for m in data_frame[self.transformer_.name]]
+        I = [self.transformer_(m) for m in self.transformer_.get_column(data_frame)]
         X = np.zeros((data_frame.shape[0], len(self.transformer_.values)))
         for i, ids in enumerate(I):
             for j in ids:
@@ -715,7 +785,7 @@ SELECT_FEATURES = {
                 "ACUM_cap",
                 "WAR_years",
                 "WAR_typewar",
-                "SIST_price",
+                # "SIST_price",
                 "CHASSIS_thic",
                 "CHASSIS_depth",
                 "CHASSIS_width",
@@ -748,7 +818,9 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(MDBNetwTransformer()),
         OneHotEncoderFeatures(MDBInterfaceTransformer()),
         OneHotEncoderFeatures(MDBSubmodelTransformer()),
-        OneHotEncoderFeatures(SISTSistTransformer()),
+        # OneHotEncoderFeatures(SISTSistTransformer()),
+        OneHotEncoderFeatures(SISTSistTypeTransformer()),
+        OneHotEncoderFeatures(BusinessFamilyTransformer()),
         OneHotEncoderFeatures(ModelProdTransformer()),
         ExtractIP(),
         LaunchDateFeatures("CPU_ldate"),
