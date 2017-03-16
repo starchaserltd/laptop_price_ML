@@ -52,6 +52,16 @@ REFERENCE_NAMES = [
     'pricing-21-02-2017',
     'pricing-22-02-2017',
     'pricing-24-02-2017',
+    'pricing-25-02-2017',
+    'pricing-28-02-2017',
+    'pricing-01-03-2017',
+    'pricing-02-03-2017',
+    'pricing-06-03-2017',
+    'pricing-08-03-2017',
+    'pricing-09-03-2017',
+    'pricing-09-03-2017-v2',
+    'pricing-12-03-2017',
+    'pricing-14-03-2017',
 ]
 new_name = sys.argv[1]
 

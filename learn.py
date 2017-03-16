@@ -156,8 +156,8 @@ def print_predictions(data, preds, verbose):
     print(sum(relative_errors > 20))
     print(sum(relative_errors > 30))
     if verbose:
-        print('\n'.join('{:4d} {:10d} {:10d} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(i, id_, model, r_price, p_price, pred, rel_e, abs_e)
-            for i, (id_, model, r_price, p_price, pred, rel_e, abs_e) in enumerate(zip(np.array(data.id), data.model, data.realprice, data.price, preds, relative_errors, absolute_errors))
+        print('\n'.join('{:4d} {:10d} {:10d} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(i, id_, model, r_price, pred, rel_e, abs_e)
+            for i, (id_, model, r_price, pred, rel_e, abs_e) in enumerate(zip(np.array(data.id), data.model, data.realprice, preds, relative_errors, absolute_errors))
             if rel_e > 30))
             # ))
         # print('\n'.join('{:4d} {:10d} {:10.2f} {:10.2f} {:32s} {:10.2f}'.format(i, j, t, p, s, e)
@@ -626,12 +626,15 @@ class ModelProdTransformer(BaseTransformer):
             "Fujitsu",
             "Gigabyte",
             "HP",
+            "LG",
             "Lenovo",
             "MSI",
             "Microsoft",
+            "Panasonic",
+            "Porsche Design",
             "Razer",
             "Samsung",
-            "Panasonic",
+            "Toshiba",
             "VAIO",
         ]
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
