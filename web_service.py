@@ -135,7 +135,7 @@ def predict():
     except Exception as e:
         print(e)
         print("WARN All prices set to -1.")
-        predictions = ['-1' for _ in len(ids)]
+        predictions = ['-1' for _ in range(len(ids))]
 
     json_data = json.dumps(predictions, indent=4)
     return json_data, 200
