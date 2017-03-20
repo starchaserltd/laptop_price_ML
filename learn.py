@@ -102,7 +102,6 @@ def load_data_sql() -> DataFrame:
         sql_engine,
         parse_dates=['CPU_ldate', 'GPU_ldate'],
     )
-    pdb.set_trace()
     return dataframe
 
 
@@ -188,13 +187,54 @@ def print_predictions(data, preds, verbose):
         #    if e > 10))
 
 
+
+db_params = json.load(open('credentials.json', 'r')).get('database_w')
+sql_engine = create_sql_engine(**db_params)
+connection_w = sql_engine.connect()
+today = datetime.date.today()
+
+
+def write_to_sql_config_to_check(row, pred, error):
+    INSERT_1 = "INSERT INTO configs_to_check(model, cpu, display, mem, hdd, shdd, gpu, wnet, odd, mdb, chassis, acum, war, sist, realprice, predprice, date, valid) values ({})"
+    INSERT_2 = "INSERT INTO models_to_check(model, error, date, valid) values ({})"
+    cols_1 = [
+        row.model,
+        row.CPU_id,
+        row.DISPLAY_id,
+        row.MEM_id,
+        row.HDD_id,
+        row.SHDD_id,
+        row.GPU_id,
+        row.WNET_id,
+        row.ODD_id,
+        row.MDB_id,
+        row.CHASSIS_id,
+        row.ACUM_id,
+        row.WAR_id,
+        row.SIST_id,
+        row.realprice,
+        pred,
+        today,
+        0,
+    ]
+    cols_2 = [
+        row.model,
+        error,
+        today,
+        0,
+    ]
+    connection_w.execute(INSERT_1.format(','.join(map(lambda c: '"{}"'.format(c), cols_1))))
+    connection_w.execute(INSERT_2.format(','.join(map(lambda c: '"{}"'.format(c), cols_2))))
+
+
 def save_predictions(data, preds):
     relative_errors = rel_error(select_targets(data), preds)
     with open('/tmp/test_predictions.csv', 'a') as f:
-        for id_, model, r_price, pred, rel_e in zip(np.array(data.id), data.model, data.realprice, preds, relative_errors):
+        for id_, model, r_price, pred, rel_e, (_, datum) in zip(np.array(data.id), data.model, data.realprice, preds, relative_errors, data.iterrows()):
             if rel_e <= 30:
                 continue
             f.write('{:d},{:d},{:.2f},{:.2f},{:.2f}\n'.format(model, id_, r_price, pred, rel_e))
+            write_to_sql_config_to_check(datum, pred, rel_e)
 
 
 def print_results(results: List[float]):
@@ -651,8 +691,9 @@ class ModelProdTransformer(BaseTransformer):
             "HP",
             "LG",
             "Lenovo",
-            "MSI",
+            "Medion",
             "Microsoft",
+            "MSI",
             "Panasonic",
             "Porsche Design",
             "Razer",
