@@ -24,36 +24,41 @@ import numpy as np  # type: ignore
 from pandas import (  # type: ignore
     DataFrame,
     read_csv,
+    read_sql_query,
 )
 
-from scipy.stats import describe
+from scipy.stats import describe  # type: ignore
 
-from sklearn.ensemble import AdaBoostRegressor
+from sklearn.ensemble import AdaBoostRegressor  # type: ignore
 
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor  # type: ignore
 
-from sklearn.kernel_ridge import KernelRidge
+from sklearn.kernel_ridge import KernelRidge  # type: ignore
 
-from sklearn.linear_model import (
+from sklearn.linear_model import (  # type: ignore
     LinearRegression,
     Ridge,
 )
 
-from sklearn.model_selection import (
+from sklearn.model_selection import (  # type: ignore
     train_test_split,
     KFold,
     RandomizedSearchCV,
 )
 
-from sklearn.preprocessing import (
+from sklearn.preprocessing import (  # type: ignore
     StandardScaler,
     OneHotEncoder,
     PolynomialFeatures,
 )
 
-from sklearn.svm import SVR
+from sklearn.svm import SVR  # type: ignore
 
-from xgboost import XGBRegressor
+from sqlalchemy.engine import create_engine  # type: ignore
+
+from urllib.parse import quote_plus as urlquote
+
+from xgboost import XGBRegressor  # type: ignore
 
 
 SEED = 1337
@@ -71,7 +76,11 @@ def remove_ext(filename):
     return name
 
 
-def load_data(path: str) -> DataFrame:
+def create_sql_engine(host, port, username, password, db):
+    return create_engine("mysql+pymysql://{}:{}@{}:{}/{}".format(username, urlquote(password), host, port, db))
+
+
+def load_data_csv(path: str) -> DataFrame:
     dateparse = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
     dataframe = read_csv(
         path,
@@ -80,6 +89,20 @@ def load_data(path: str) -> DataFrame:
         date_parser=dateparse,
     )
     dataframe.fillna('', inplace=True)
+    return dataframe
+
+
+def load_data_sql() -> DataFrame:
+    with open('query.sql', 'r') as f:
+        query = f.read()
+    db_params = json.load(open('credentials.json', 'r')).get('database_r')
+    sql_engine = create_sql_engine(**db_params)
+    dataframe = read_sql_query(
+        query,
+        sql_engine,
+        parse_dates=['CPU_ldate', 'GPU_ldate'],
+    )
+    pdb.set_trace()
     return dataframe
 
 
@@ -1114,7 +1137,13 @@ def main():
 
     rm('/tmp/test_predictions.csv')
     classifier = GET_ESTIMATOR[args.estimator](SELECT_FEATURES[args.features])
-    data = load_data('data/{}.csv'.format(args.data))
+
+    if args.data:
+        load_data = lambda: load_data_csv('data/{}.csv'.format(args.data))
+    else:
+        load_data = lambda: load_data_sql()
+
+    data = load_data()
 
     if 'evaluate' in args.todo:
         tr_errors, te_errors = evaluate(classifier, data, 2)

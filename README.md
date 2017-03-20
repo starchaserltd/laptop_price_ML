@@ -22,6 +22,12 @@ Create a JSON file `credentials.json` containing the database credentials:
 }
 ```
 
+## Deployement on CentOS
+
+```
+sudo yum -y install gcc-c++
+```
+
 ## Usage
 
 Start and test the prediction web-service:

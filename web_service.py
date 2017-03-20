@@ -33,21 +33,13 @@ from pandas import (
     read_sql_table,
 )
 
-from sqlalchemy.engine import create_engine
-
-from urllib.parse import quote_plus as urlquote
-
 from learn import (
+    create_sql_engine,
     load_classifier,
-    load_data,
     RidgeEstimator,
 )
 
 from utils import wrap_exceptions
-
-
-def create_sql_engine(host, port, username, password, db):
-    return create_engine("mysql+pymysql://{}:{}@{}:{}/{}".format(username, urlquote(password), host, port, db))
 
 
 def load_sql_table(table_name, sql_engine):
@@ -129,7 +121,6 @@ def predict():
 
     try:
         data = ids_to_data_frame(ids)
-        # data = load_data('data/pricing-01-03-2017.csv')
         predictions = classifier.predict(data)
         predictions = ['{:.2f}'.format(p) for p in predictions]
     except Exception as e:

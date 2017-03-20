@@ -3,7 +3,7 @@ import pdb
 import os
 import sys
 
-from learn import load_data
+from learn import load_data_csv as load_data
 
 
 def get_data_path(name):
@@ -62,6 +62,8 @@ REFERENCE_NAMES = [
     'pricing-09-03-2017-v2',
     'pricing-12-03-2017',
     'pricing-14-03-2017',
+    'pricing-16-03-2017',
+    # 'pricing-20-03-2017',
 ]
 new_name = sys.argv[1]
 
