@@ -54,6 +54,22 @@ ids = [
         "WAR": 1,
         "WNET": 41,
     },
+    {
+        "ACUM": 299,
+        "CHASSIS": 690,
+        "CPU": 318,
+        "DISPLAY": 5,
+        "GPU": 486,
+        "HDD": 29,
+        "MDB": 686,
+        "MEM": 24,
+        "MODEL": 689,
+        "ODD": 0,
+        "SHDD": 0,
+        "SIST": 1,
+        "WAR": 2,
+        "WNET": 35,
+    },
 ]
 
 response = requests.post(URL, data=json.dumps(dict(ids=ids)))
