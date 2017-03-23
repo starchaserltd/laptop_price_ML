@@ -6,6 +6,7 @@ import pdb
 import pickle
 import re
 import time
+import traceback
 import warnings
 
 from flask import (
@@ -124,8 +125,10 @@ def predict():
         predictions = classifier.predict(data)
         predictions = ['{:.2f}'.format(p) for p in predictions]
     except Exception as e:
-        print(e)
-        print("WARN All prices set to -1.")
+        logger.error(" -- WARN Got exception in the tagger backend!")
+        logger.error(" -- WARN All prices set to '-1'")
+        logger.error(" -- %r" % e)
+        logger.error(traceback.format_exc())
         predictions = ['-1' for _ in range(len(ids))]
 
     json_data = json.dumps(predictions, indent=4)
