@@ -5,6 +5,7 @@ import requests
 
 URL = 'http://localhost:6667/predict'
 
+
 ids = [
     {
         "ACUM": 17,
@@ -71,6 +72,16 @@ ids = [
         "WNET": 35,
     },
 ]
+
+# keys = "ACUM,CHASSIS,CPU,DISPLAY,GPU,HDD,MDB,MEM,MODEL,ODD,SHDD,SIST,WAR,WNET"
+# keys = keys.split(',')
+#
+# with open('data/692.csv', 'r') as f:
+#     for line in f.readlines():
+#         values = map(int, line.split(','))
+#         d = dict(zip(keys, values))
+#         ids.append(d)
+
 
 response = requests.post(URL, data=json.dumps(dict(ids=ids)))
 print(response.status_code)
