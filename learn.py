@@ -1204,7 +1204,7 @@ def main():
         print('Te:', end=' ')
         print_results(te_errors)
 
-        write_to_sql_error(tr_errors)
+        write_to_sql_error(te_errors)
 
     if 'train' in args.todo:
         classifier.fit(data)
