@@ -691,31 +691,19 @@ class ModelProdTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'model_prod'
-        self.values = [
-            "Acer",
-            "Apple",
-            "Asus",
-            "Clevo",
-            "Dell",
-            "Fujitsu",
-            "Gigabyte",
-            "HP",
-            "LG",
-            "Lenovo",
-            "Medion",
-            "Microsoft",
-            "MSI",
-            "Panasonic",
-            "Porsche Design",
-            "Razer",
-            "Samsung",
-            "Toshiba",
-            "VAIO",
-        ]
+        self.values = self._get_model_prods()
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
+    def _get_model_prods(self):
+        db_params = json.load(open('credentials.json', 'r')).get('database')
+        sql_engine = create_sql_engine(**db_params)
+        conn = sql_engine.connect()
+        result = conn.execute('SELECT DISTINCT prod FROM MODEL')
+        models = [m for (m, ) in result]
+        return models
+
     @wrap_key_error
-    def __call__(self, v):
+    def __call__(self, v: str) -> List[int]:
         return [self.value_to_id_[v]]
 
 
