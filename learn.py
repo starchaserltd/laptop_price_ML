@@ -56,6 +56,8 @@ from sklearn.svm import SVR  # type: ignore
 
 from sqlalchemy.engine import create_engine  # type: ignore
 
+from sqlalchemy.pool import NullPool  # type: ignore
+
 from urllib.parse import quote_plus as urlquote
 
 from xgboost import XGBRegressor  # type: ignore
@@ -77,7 +79,7 @@ def remove_ext(filename):
 
 
 def create_sql_engine(host, port, username, password, db):
-    return create_engine("mysql+pymysql://{}:{}@{}:{}/{}".format(username, urlquote(password), host, port, db))
+    return create_engine("mysql+pymysql://{}:{}@{}:{}/{}".format(username, urlquote(password), host, port, db), poolclass=NullPool)
 
 
 def load_data_csv(path: str) -> DataFrame:
