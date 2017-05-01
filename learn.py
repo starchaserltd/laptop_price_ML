@@ -228,7 +228,7 @@ def write_to_sql_config_to_check(row, pred, error):
 
 
 def write_to_sql_error(errors: List[float]) -> None:
-    INSERT = "INSERT INTO models_to_check(date, error) values ({})"
+    INSERT = "INSERT INTO error(date, error) values ({})"
     cols = [
         today,
         np.mean(errors),
