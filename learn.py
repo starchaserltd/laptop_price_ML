@@ -149,7 +149,7 @@ def evaluate_fold(classifier, data: DataFrame, idxs: Any, verbose: int=0) -> Tup
     return tr_error, te_error
 
 
-def evaluate(classifier, data: DataFrame, verbose: int=0):
+def evaluate(classifier, data: DataFrame, verbose: int=0) -> Tuple[List[float], List[float]]:
     results = []
     kf = KFold(n_splits=6, shuffle=True, random_state=SEED)
     for idxs in kf.split(np.arange(len(data))):
@@ -225,6 +225,15 @@ def write_to_sql_config_to_check(row, pred, error):
     ]
     connection_w.execute(INSERT_1.format(','.join(map(lambda c: '"{}"'.format(c), cols_1))))
     connection_w.execute(INSERT_2.format(','.join(map(lambda c: '"{}"'.format(c), cols_2))))
+
+
+def write_to_sql_error(errors: List[float]) -> None:
+    INSERT = "INSERT INTO models_to_check(date, error) values ({})"
+    cols = [
+        today,
+        np.mean(errors),
+    ]
+    connection_w.execute(INSERT.format(','.join(map(lambda c: '"{}"'.format(c), cols))))
 
 
 def save_predictions(data, preds):
@@ -1194,6 +1203,8 @@ def main():
 
         print('Te:', end=' ')
         print_results(te_errors)
+
+        write_to_sql_error(tr_errors)
 
     if 'train' in args.todo:
         classifier.fit(data)
