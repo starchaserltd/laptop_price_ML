@@ -133,10 +133,12 @@ def predict() -> Tuple[Any, int]:
         logger.error(" -- %r" % e)
         logger.error(traceback.format_exc())
 
-        with open('/tmp/data.pickle', 'wb') as f:
+        today = datetime.date.today()
+
+        with open('/tmp/data.{}.pickle'.format(today), 'wb') as f:
             pickle.dump(data, f)
 
-        with open('/tmp/ids.json', 'w') as f:
+        with open('/tmp/ids.{}.json'.format(today), 'w') as f:
             f.write(json.dumps(ids, indent=4))
 
         predictions = ['-1' for _ in range(len(ids))]
