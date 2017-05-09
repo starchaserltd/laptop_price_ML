@@ -123,7 +123,6 @@ def predict() -> Tuple[Any, int]:
 
     try:
         data = ids_to_data_frame(ids)
-        raise ValueError
         predictions = classifier.predict(data)
         predictions = ['{:.2f}'.format(p) for p in predictions]
     except Exception as e:
