@@ -25,6 +25,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Tuple,
 )
 
 import pandas
@@ -115,20 +116,29 @@ wrap_exceptions_logger = partial(wrap_exceptions, logger=logger)
 
 @app.route('/predict', methods=['POST'])
 @wrap_exceptions_logger
-def predict():
+def predict() -> Tuple[Any, int]:
     ids = request.get_json(force=True)['ids']
     if ids is None or len(ids) == 0:
         return "Bad request, header Content-type should be 'binary/octet-stream' ", 400
 
     try:
         data = ids_to_data_frame(ids)
+        raise ValueError
         predictions = classifier.predict(data)
         predictions = ['{:.2f}'.format(p) for p in predictions]
     except Exception as e:
+
         logger.error(" -- WARN Got exception in the tagger backend!")
         logger.error(" -- WARN All prices set to '-1'")
         logger.error(" -- %r" % e)
         logger.error(traceback.format_exc())
+
+        with open('/tmp/data.pickle', 'wb') as f:
+            pickle.dump(data, f)
+
+        with open('/tmp/ids.json', 'w') as f:
+            f.write(json.dumps(ids, indent=4))
+
         predictions = ['-1' for _ in range(len(ids))]
 
     json_data = json.dumps(predictions, indent=4)
