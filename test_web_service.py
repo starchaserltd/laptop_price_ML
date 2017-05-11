@@ -82,6 +82,8 @@ ids = [
 #         d = dict(zip(keys, values))
 #         ids.append(d)
 
+# with open('data/ids.2017-05-10.json', 'r') as f:
+#     ids = json.loads(f.read())
 
 response = requests.post(URL, data=json.dumps(dict(ids=ids)))
 print(response.status_code)

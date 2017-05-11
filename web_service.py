@@ -140,6 +140,9 @@ def predict() -> Tuple[Any, int]:
         with open('/tmp/ids.{}.json'.format(today), 'w') as f:
             f.write(json.dumps(ids, indent=4))
 
+        with open('/tmp/tables.{}.pickle'.format(today), 'wb') as f:
+            pickle.dump(tables, f)
+
         predictions = ['-1' for _ in range(len(ids))]
 
     json_data = json.dumps(predictions, indent=4)
