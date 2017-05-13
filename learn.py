@@ -1170,7 +1170,6 @@ def main():
     )
     parser.add_argument(
         '-d', '--data',
-        choices=[remove_ext(f) for f in os.listdir('data')],
         help='name of CSV data file',
     )
     args = parser.parse_args()
