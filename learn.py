@@ -326,6 +326,7 @@ class ChassisMadeTransformer(BaseTransformer):
     def __init__(self):
         self.name = 'CHASSIS_made'
         self.text_to_value_ = {
+            "Alcantara": "other",
             "Aluminium": "aluminium",
             "Anodized aluminium": "aluminium",
             "Carbon fiber": "carbon",
@@ -530,6 +531,7 @@ class SISTSistTypeTransformer(BaseTransformer):
             "No OS",
             "Windows Home",
             "Windows Pro",
+            "Windows S",
             "macOS",
         ]
 
