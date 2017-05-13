@@ -701,6 +701,7 @@ class ModelProdTransformer(BaseTransformer):
         sql_engine = create_sql_engine(**db_params)
         conn = sql_engine.connect()
         result = conn.execute('SELECT DISTINCT prod FROM MODEL')
+        conn.close()
         models = [m for (m, ) in result]
         return models
 
@@ -1200,6 +1201,8 @@ def main():
     if 'train' in args.todo:
         classifier.fit(data)
         save_classifier('models/classifier.pickle'.format(), classifier)
+
+    connection_w.close()
 
 
 if __name__ == '__main__':
