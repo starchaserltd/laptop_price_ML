@@ -409,7 +409,7 @@ class ChassisMscTransformer(BaseTransformer):
         ]
         self.matchers = [
             lambda t: True,
-            lambda t: any(re.search(s, t) for s in ('JBL', 'Klipsch', 'Bang & Olufsen', 'SonicMaster')),
+            lambda t: any(re.search(s, t) for s in ('JBL', 'Klipsch', 'Bang & Olufsen', 'SonicMaster', 'Harman')),
             lambda t: re.search('speakers', t),
             lambda t: re.search('fingerprint reader', t.lower()),
             lambda t: re.search('Rear camera', t),
