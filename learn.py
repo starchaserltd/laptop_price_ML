@@ -572,16 +572,13 @@ class BusinessFamilyTransformer(BaseTransformer):
             "y",
         ]
         self.business_families = [
+            "elitebook",
             "latitude",
             "precision",
-            "elite",
-            "proBook",
-            "zbook",
             "thinkpad",
-            "productivity",
-            "workstation",
-            "asuspro",
-            "travelmate",
+            "thoughbook",
+            "vostro",
+            "zbook",
         ]
 
     def get_column(self, data_frame):
