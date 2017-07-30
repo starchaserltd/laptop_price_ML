@@ -45,8 +45,17 @@ from utils import wrap_exceptions
 
 
 def load_sql_table(table_name, sql_engine):
-    # data = read_sql_query("SELECT * FROM {} LIMIT 10".format(table_name), sql_engine)
-    data = read_sql_table(table_name, sql_engine)
+    if table_name == "MODEL":
+        QUERY_MODEL = """
+            SELECT MODEL.id, MODEL.prod, FAMILIES.fam
+            FROM MODEL
+            JOIN FAMILIES
+            ON MODEL.idfam = FAMILIES.id
+        """
+        data = read_sql_query(QUERY_MODEL, sql_engine)
+    else:
+        # data = read_sql_query("SELECT * FROM {} LIMIT 10".format(table_name), sql_engine)
+        data = read_sql_table(table_name, sql_engine)
     data = data.set_index('id')
     return data
 

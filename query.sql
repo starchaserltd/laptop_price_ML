@@ -3,7 +3,7 @@ SELECT notebro_prices.pricing_all_conf.id,
        notebro_prices.pricing_all_conf.model,
        notebro_prices.pricing_all_conf.price,
        notebro_prices.pricing_all_conf.realprice,
-       notebro_db.MODEL.fam AS model_fam,
+       notebro_db.FAMILIES.fam AS model_fam,
        notebro_db.MODEL.prod AS model_prod,
        notebro_db.CPU.id AS CPU_id,
        notebro_db.CPU.prod AS CPU_prod,
@@ -209,7 +209,8 @@ SELECT notebro_prices.pricing_all_conf.id,
        notebro_db.SIST.valid AS SIST_valid,
        notebro_db.SIST.price_org AS SIST_price_org
 FROM notebro_prices.pricing_all_conf
-JOIN notebro_db.MODEL ON notebro_db.MODEL.id=notebro_prices.pricing_all_conf.model
+JOIN (notebro_db.MODEL JOIN notebro_db.FAMILIES ON notebro_db.MODEL.idfam = notebro_db.FAMILIES.id)
+    ON notebro_db.MODEL.id = notebro_prices.pricing_all_conf.model
 JOIN notebro_db.CPU ON notebro_db.CPU.id = notebro_prices.pricing_all_conf.CPU
 JOIN notebro_db.DISPLAY ON notebro_db.DISPLAY.id = notebro_prices.pricing_all_conf.DISPLAY
 JOIN notebro_db.MEM ON notebro_db.MEM.id = notebro_prices.pricing_all_conf.MEM
