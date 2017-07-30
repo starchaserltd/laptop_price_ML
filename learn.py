@@ -266,6 +266,12 @@ def extract_n_antennas(args):
     return n_antennas
 
 
+def extract_srgb(args):
+    srgb = args[0]
+    srgb[srgb == 0] = 55
+    return srgb
+
+
 def wrap_key_error(func):
     @functools.wraps(func)
     def func_wrapper(self, value):
@@ -874,6 +880,11 @@ SELECT_FEATURES = {
             name="DISPLAY_hres*vres",
             selected=["DISPLAY_hres", "DISPLAY_vres"],
             func=lambda xs: xs[0] * xs[1],
+        ),
+        ProcessedFeatures(
+            name="DISPLAY_srgb",
+            selected=["DISPLAY_srgb"],
+            func=extract_srgb,
         ),
         ProcessedFeatures(
             name="MEM_freq/lat",
