@@ -880,7 +880,7 @@ SELECT_FEATURES = {
         ),
         ProcessedFeatures(
             name="DISPLAY_srgb",
-            selected=["DISPLAY_srgb"],
+            selected=["DISPLAY_sRGB"],
             func=extract_srgb,
         ),
         ProcessedFeatures(
