@@ -335,6 +335,7 @@ class ChassisMadeTransformer(BaseTransformer):
             "Alcantara": "other",
             "Aluminium": "aluminium",
             "Anodized aluminium": "aluminium",
+            "Carbon": "carbon",
             "Carbon fiber": "carbon",
             "Carbon fiber reinforced plastic": "carbon",
             "Glass fiber reinforced plastic": "glass",
