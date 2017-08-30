@@ -422,6 +422,7 @@ class ChassisMscTransformer(BaseTransformer):
             'SonicMaster',
             'Harman',
             'Altec Lansing',
+            'Onkyo',
         ]
         self.matchers = [
             lambda t: True,
