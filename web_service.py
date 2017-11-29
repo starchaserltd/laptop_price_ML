@@ -86,7 +86,6 @@ classifier = load_classifier('models/classifier.pickle')
 sql_engine = create_sql_engine(**json.load(open('credentials.json', 'r')).get('database'))
 tables = {table_name: load_sql_table(table_name, sql_engine) for table_name in TABLE_NAMES}
 
-
 def create_column_names():
     handle_special_case = lambda name: name.lower() if name == 'MODEL' else name
     return [
@@ -127,11 +126,19 @@ wrap_exceptions_logger = partial(wrap_exceptions, logger=logger)
 @wrap_exceptions_logger
 def predict() -> Tuple[Any, int]:
     ids = request.get_json(force=True)['ids']
-    if ids is None or len(ids) == 0:
+
+    if ids is None:
         return "Bad request, header Content-type should be 'binary/octet-stream' ", 400
+
+    if len(ids) == 0:
+        json_data = json.dumps(predictions, indent=4)
+        return json_data, 200
 
     try:
         data = ids_to_data_frame(ids)
+        # with open('data/data.2017-08-31.pickle', 'rb') as f:
+        #     data = pickle.load(f)
+        # pdb.set_trace()
         predictions = classifier.predict(data)
         predictions = ['{:.2f}'.format(p) for p in predictions]
     except Exception as e:
