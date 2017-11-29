@@ -131,7 +131,7 @@ def predict() -> Tuple[Any, int]:
         return "Bad request, header Content-type should be 'binary/octet-stream' ", 400
 
     if len(ids) == 0:
-        json_data = json.dumps(predictions, indent=4)
+        json_data = json.dumps([], indent=4)
         return json_data, 200
 
     try:
