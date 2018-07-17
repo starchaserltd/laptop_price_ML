@@ -339,6 +339,7 @@ class ChassisMadeTransformer(BaseTransformer):
             "Carbon fiber": "carbon",
             "Carbon fiber reinforced plastic": "carbon",
             "Glass fiber reinforced plastic": "glass",
+            "Glass Fiber": "glass",
             "Lithium": "lithium",
             "Magnesium": "magnesium",
             "Magnesium alloy": "magnesium",
