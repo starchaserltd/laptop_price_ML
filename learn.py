@@ -332,30 +332,30 @@ class ChassisMadeTransformer(BaseTransformer):
     def __init__(self):
         self.name = 'CHASSIS_made'
         self.text_to_value_ = {
-            "Alcantara": "other",
-            "Aluminium": "aluminium",
-            "Anodized aluminium": "aluminium",
-            "Carbon": "carbon",
-            "Carbon fiber": "carbon",
-            "Carbon fiber reinforced plastic": "carbon",
-            "Glass fiber reinforced plastic": "glass",
-            "Glass Fiber": "glass",
-            "Lithium": "lithium",
-            "Magnesium": "magnesium",
-            "Magnesium alloy": "magnesium",
-            "Magnesium aluminium alloy": "magnesium",
-            "Metal": "aluminium",
-            "Plastic": "plastic",
-            "Rubber": "rubber",
-            "Shock-absorbing ultra-polymer": "polymer",
-            "Steel reinforcements": "other",
+            "alcantara": "other",
+            "aluminium": "aluminium",
+            "anodized aluminium": "aluminium",
+            "carbon": "carbon",
+            "carbon fiber": "carbon",
+            "carbon fiber reinforced plastic": "carbon",
+            "glass fiber reinforced plastic": "glass",
+            "glass fiber": "glass",
+            "lithium": "lithium",
+            "magnesium": "magnesium",
+            "magnesium alloy": "magnesium",
+            "magnesium aluminium alloy": "magnesium",
+            "metal": "aluminium",
+            "plastic": "plastic",
+            "rubber": "rubber",
+            "shock-absorbing ultra-polymer": "polymer",
+            "steel reinforcements": "other",
         }
         self.values = sorted(list(set(self.text_to_value_.values())))
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
     @wrap_key_error
     def __call__(self, v):
-        return [self.value_to_id_[self.text_to_value_[w]] for w in v.split(',')]
+        return [self.value_to_id_[self.text_to_value_[w.lower()]] for w in v.split(',')]
 
 
 class ChassisPiTransformer(BaseTransformer):
