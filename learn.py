@@ -340,6 +340,7 @@ class ChassisMadeTransformer(BaseTransformer):
             "carbon fiber reinforced plastic": "carbon",
             "glass fiber reinforced plastic": "glass",
             "glass fiber": "glass",
+            "glass": "glass",
             "lithium": "lithium",
             "magnesium": "magnesium",
             "magnesium alloy": "magnesium",
@@ -481,7 +482,7 @@ class ACUMTipcTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'ACUM_tipc'
-        self.values = ["Li-Ion", "Li-Pol"]
+        self.values = ["Li-Ion", "Li-Pol", "Zn-Br"]
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
     @wrap_key_error
