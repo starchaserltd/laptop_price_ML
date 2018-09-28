@@ -482,12 +482,18 @@ class ACUMTipcTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'ACUM_tipc'
-        self.values = ["Li-Ion", "Li-Pol", "Zn-Br"]
+        self.text_to_value_ = {
+            "li-ion": "li-ion",
+            "li-pol": "li-pol",
+            "zn-br": "zn-br",
+            "zn-br flow": "zn-br",
+        }
+        self.values = sorted(list(set(self.text_to_value_.values())))
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
 
     @wrap_key_error
     def __call__(self, v):
-        return [self.value_to_id_[v]]
+        return [self.value_to_id_[self.text_to_value_[w.lower()]] for w in v.split(',')]
 
 
 class CPUModelTransformer(BaseTransformer):
