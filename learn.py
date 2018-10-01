@@ -1061,6 +1061,7 @@ class AdaboostEstimator(Estimator):
             param_distributions=param_dist,
             n_iter=n_iter_search,
             scoring=scorer,
+            cv=3,
             n_jobs=3,
             verbose=1,
         )
@@ -1140,6 +1141,7 @@ class XGBoostEstimator(Estimator):
             param_distributions=param_dist,
             n_iter=n_iter_search,
             scoring=scorer,
+            cv=3,
             n_jobs=1,
             verbose=1,
         )
