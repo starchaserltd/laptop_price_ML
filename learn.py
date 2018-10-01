@@ -475,6 +475,8 @@ class ChassisViTransformer(BaseTransformer):
 
     @wrap_key_error
     def __call__(self, v):
+        if v is None:
+            v = ""
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
