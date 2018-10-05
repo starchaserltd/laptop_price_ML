@@ -150,8 +150,8 @@ def predict() -> Tuple[Any, int]:
 
         today = datetime.date.today()
 
-        with open('/tmp/data.{}.pickle'.format(today), 'wb') as f:
-            pickle.dump(data, f)
+        # with open('/tmp/data.{}.pickle'.format(today), 'wb') as f:
+        #     pickle.dump(data, f)
 
         with open('/tmp/ids.{}.json'.format(today), 'w') as f:
             f.write(json.dumps(ids, indent=4))
