@@ -342,6 +342,7 @@ class ChassisMadeTransformer(BaseTransformer):
             "glass fiber": "glass",
             "glass": "glass",
             "lithium": "lithium",
+            "leather": "other",
             "magnesium": "magnesium",
             "magnesium alloy": "magnesium",
             "magnesium aluminium alloy": "magnesium",
