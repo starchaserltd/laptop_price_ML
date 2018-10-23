@@ -341,6 +341,7 @@ class ChassisMadeTransformer(BaseTransformer):
             "glass fiber reinforced plastic": "glass",
             "glass fiber": "glass",
             "glass": "glass",
+            "hard plastic": "hard-plastic",
             "lithium": "lithium",
             "leather": "other",
             "magnesium": "magnesium",
