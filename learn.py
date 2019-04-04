@@ -329,8 +329,13 @@ class BaseTransformer:
 
 class ChassisMadeTransformer(BaseTransformer):
 
-    def __init__(self):
-        self.name = 'CHASSIS_made'
+    def __init__(self, type_='primary'):
+        if type_ == 'primary':
+            self.name = 'CHASSIS_made'
+        elif type_ == 'secondary':
+            self.name = 'CHASSIS_smade'
+        else:
+            assert False, "Unkown ChassisMade type"
         self.text_to_value_ = {
             "alcantara": "other",
             "aluminium": "aluminium",
@@ -911,7 +916,8 @@ SELECT_FEATURES = {
         OneHotEncoderFeatures(CPUModelTransformer()),
         OneHotEncoderFeatures(GPUModelTransformer()),
         OneHotEncoderFeatures(ACUMTipcTransformer()),
-        OneHotEncoderFeatures(ChassisMadeTransformer()),
+        OneHotEncoderFeatures(ChassisMadeTransformer(type_='primary')),
+        OneHotEncoderFeatures(ChassisMadeTransformer(type_='secondary')),
         OneHotEncoderFeatures(ChassisPiTransformer()),
         OneHotEncoderFeatures(ChassisViTransformer()),
         OneHotEncoderFeatures(ChassisMscTransformer()),
