@@ -87,9 +87,15 @@ sql_engine = create_sql_engine(**json.load(open('credentials.json', 'r')).get('d
 tables = {table_name: load_sql_table(table_name, sql_engine) for table_name in TABLE_NAMES}
 
 def create_column_names():
-    handle_special_case = lambda name: name.lower() if name == 'MODEL' else name
+    def _get_name(table, column):
+        # Handle special cases
+        if table == 'MODEL':
+            table = table.lower()
+        elif table == 'CHASSIS' and column == 's_made':
+            column = 'smade'
+        return table + '_' + column
     return [
-        handle_special_case(i) + '_' + c
+        _get_name(i, c)
         for i in sorted(ID_TO_TABLE_NAME.keys())
         for c in tables[ID_TO_TABLE_NAME[i]].columns.values
         if c != 'id'
