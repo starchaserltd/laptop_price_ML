@@ -330,12 +330,12 @@ class BaseTransformer:
 class ChassisMadeTransformer(BaseTransformer):
 
     def __init__(self, type_='primary'):
-        if type_ == 'primary':
-            self.name = 'CHASSIS_made'
-        elif type_ == 'secondary':
-            self.name = 'CHASSIS_smade'
-        else:
-            assert False, "Unkown ChassisMade type"
+        self.NAMES = {
+            'primary': 'CHASSIS_made',
+            'secondary': 'CHASSIS_smade',
+        }
+        self.name = self.NAMES[type_]
+        self.type_ = type_
         self.text_to_value_ = {
             "alcantara": "other",
             "aluminium": "aluminium",
@@ -360,6 +360,13 @@ class ChassisMadeTransformer(BaseTransformer):
         }
         self.values = sorted(list(set(self.text_to_value_.values())))
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
+
+    def get_column(self, data_frame):
+        column = data_frame[self.name]
+        if self.type_ == "secondary":
+            column_primary = data_frame[self.NAMES["primary"]]
+            column = column.fillna(column_primary)
+        return column
 
     @wrap_key_error
     def __call__(self, v):
