@@ -576,7 +576,10 @@ class SISTSistTypeTransformer(BaseTransformer):
         raise KeyError
 
     def get_column(self, data_frame):
-        return data_frame[['SIST_sist', 'SIST_type']].apply(lambda x: ' '.join(x), axis=1)
+        column = data_frame[['SIST_sist', 'SIST_type']]
+        column = column.fillna(value='')
+        column = column.apply(lambda x: ' '.join(x), axis=1)
+        return column
 
     @wrap_key_error
     def __call__(self, v):
