@@ -1083,7 +1083,7 @@ class XGBoostEstimator(Estimator):
     def __init__(self, select_features_list):
         self.select_features_list_ = select_features_list
 
-        estimator_ = XGBRegressor()
+        estimator_ = XGBRegressor(objective='reg:squarederror')
         param_dist = {
             "max_depth": [4, 8, 16, 32],
             "learning_rate": [0.01, 0.1, 1.0],
