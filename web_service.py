@@ -59,6 +59,12 @@ def load_sql_table(table_name, sql_engine):
     data = data.set_index('id')
     return data
 
+def load_sql_tables(sql_engine):
+    return {
+        table_name: load_sql_table(table_name, sql_engine)
+        for table_name in TABLE_NAMES
+    }
+
 
 TABLE_NAMES = {
     "ACUM",
@@ -83,8 +89,11 @@ ID_TO_TABLE_NAME['SHDD'] = 'HDD'
 
 classifier = load_classifier('models/classifier.pickle')
 # classifier.estimator_.best_estimator_.nthread = int(os.environ.get('NOTEB_PRICE_NTHREAD', 8))
-sql_engine = create_sql_engine(**json.load(open('credentials.json', 'r')).get('database'))
-tables = {table_name: load_sql_table(table_name, sql_engine) for table_name in TABLE_NAMES}
+SQL_ENGINE = create_sql_engine(**json.load(open('credentials.json', 'r')).get('database'))
+
+global tables
+tables = load_sql_tables(SQL_ENGINE)
+
 
 def create_column_names():
     def _get_name(table, column):
@@ -169,6 +178,13 @@ def predict() -> Tuple[Any, int]:
 
     json_data = json.dumps(predictions, indent=4)
     return json_data, 200
+
+
+@app.route('/reload-tables')
+@wrap_exceptions_logger
+def reload_tables():
+    global tables
+    tables = load_sql_tables(SQL_ENGINE)
 
 
 if __name__ == '__main__':
