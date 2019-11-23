@@ -185,6 +185,7 @@ def predict() -> Tuple[Any, int]:
 def reload_tables():
     global tables
     tables = load_sql_tables(SQL_ENGINE)
+    return json.dumps({"message": "Reload was succesfull!"}), 200
 
 
 if __name__ == '__main__':
