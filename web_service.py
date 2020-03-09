@@ -120,7 +120,7 @@ def ids_to_data_frame(list_of_ids):
     name_to_ids = group_ids(list_of_ids)
     data_frame = pandas.concat(
         [
-            tables[ID_TO_TABLE_NAME[id_]].ix[name_to_ids[id_]].reset_index(drop=True)
+            tables[ID_TO_TABLE_NAME[id_]].loc[name_to_ids[id_]].reset_index(drop=True)
             for id_ in sorted(ID_TO_TABLE_NAME.keys())
         ],
         ignore_index=True,
