@@ -575,12 +575,24 @@ class SISTSistTypeTransformer(BaseTransformer):
             "Windows S",
             "macOS",
         ]
+        # TODO Uncomment to populate values from the database
+        # self.values = self._get_values()
 
     def text_to_id_(self, text):
         for i, v in enumerate(self.values):
             if re.match('^{}'.format(v), text):
                 return i
         raise KeyError
+
+    def _get_values(self):
+        db_params = json.load(open('credentials.json', 'r')).get('database')
+        sql_engine = create_sql_engine(**db_params)
+        conn = sql_engine.connect()
+        # TODO Update SQL query to retrieve operating system
+        result = conn.execute('SELECT DISTINCT prod FROM model')
+        conn.close()
+        models = [m for (m, ) in result]
+        return models
 
     def get_column(self, data_frame):
         column = data_frame[['SIST_sist', 'SIST_type']]
@@ -741,7 +753,7 @@ class ModelProdTransformer(BaseTransformer):
         db_params = json.load(open('credentials.json', 'r')).get('database')
         sql_engine = create_sql_engine(**db_params)
         conn = sql_engine.connect()
-        result = conn.execute('SELECT DISTINCT prod FROM MODEL')
+        result = conn.execute('select distinct prod from model')
         conn.close()
         models = [m for (m, ) in result]
         return models
