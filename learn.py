@@ -560,7 +560,7 @@ class SISTSistTransformer(BaseTransformer):
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
 
-
+#SELECT `sist`,`type`, RTRIM(CONCAT(`sist`,' ',`type`)) AS `sist_name` FROM `notebro_db`.`SIST` WHERE 1
 class SISTSistTypeTransformer(BaseTransformer):
 
     def __init__(self):
