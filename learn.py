@@ -749,7 +749,7 @@ class ModelProdTransformer(BaseTransformer):
         db_params = json.load(open('credentials.json', 'r')).get('database')
         sql_engine = create_sql_engine(**db_params)
         conn = sql_engine.connect()
-        result = conn.execute('select distinct prod from model')
+        result = conn.execute('SELECT DISTINCT `prod` FROM `notebro_db`.`MODEL`')
         conn.close()
         models = [m for (m, ) in result]
         return models
