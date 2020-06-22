@@ -586,10 +586,9 @@ class SISTSistTypeTransformer(BaseTransformer):
         db_params = json.load(open('credentials.json', 'r')).get('database')
         sql_engine = create_sql_engine(**db_params)
         conn = sql_engine.connect()
-        result = conn.execute("SELECT `sist`,`type`, RTRIM(CONCAT(`sist`,' ',`type`)) AS `sist_name` FROM `notebro_db`.`SIST` WHERE 1")
+        result = conn.execute("SELECT `sist`, `type`, RTRIM(CONCAT(`sist`,' ',`type`)) AS `sist_name` FROM `notebro_db`.`SIST` WHERE 1")
         conn.close()
-        models = [m for (m, ) in result]
-        return models
+        return [value for _, _, value in result.fetchall()]
 
     def get_column(self, data_frame):
         column = data_frame[['SIST_sist', 'SIST_type']]
