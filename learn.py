@@ -560,23 +560,21 @@ class SISTSistTransformer(BaseTransformer):
     def __call__(self, v):
         return [self.text_to_id_(w) for w in v.split(',')]
 
-#SELECT `sist`,`type`, RTRIM(CONCAT(`sist`,' ',`type`)) AS `sist_name` FROM `notebro_db`.`SIST` WHERE 1
 class SISTSistTypeTransformer(BaseTransformer):
 
     def __init__(self):
         self.name = 'SIST_sist+type'
-        self.values = [
-            "Android",
-            "Chrome OS",
-            "Linux Ubuntu",
-            "No OS",
-            "Windows Home",
-            "Windows Pro",
-            "Windows S",
-            "macOS",
-        ]
-        # TODO Uncomment to populate values from the database
-        # self.values = self._get_values()
+        # self.values = [
+        #     "Android",
+        #     "Chrome OS",
+        #     "Linux Ubuntu",
+        #     "No OS",
+        #     "Windows Home",
+        #     "Windows Pro",
+        #     "Windows S",
+        #     "macOS",
+        # ]
+        self.values = self._get_values()
 
     def text_to_id_(self, text):
         for i, v in enumerate(self.values):
@@ -588,8 +586,7 @@ class SISTSistTypeTransformer(BaseTransformer):
         db_params = json.load(open('credentials.json', 'r')).get('database')
         sql_engine = create_sql_engine(**db_params)
         conn = sql_engine.connect()
-        # TODO Update SQL query to retrieve operating system
-        result = conn.execute('SELECT DISTINCT prod FROM model')
+        result = conn.execute("SELECT `sist`,`type`, RTRIM(CONCAT(`sist`,' ',`type`)) AS `sist_name` FROM `notebro_db`.`SIST` WHERE 1")
         conn.close()
         models = [m for (m, ) in result]
         return models
