@@ -489,8 +489,7 @@ class ChassisViTransformer(BaseTransformer):
 
     @wrap_key_error
     def __call__(self, v):
-        if v is None:
-            v = ""
+        v = v or ""
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
@@ -509,6 +508,7 @@ class ACUMTipcTransformer(BaseTransformer):
 
     @wrap_key_error
     def __call__(self, v):
+        v = v or ""
         return [self.value_to_id_[self.text_to_value_[w.lower()]] for w in v.split(',')]
 
 
@@ -655,6 +655,7 @@ class MDBNetwTransformer(BaseTransformer):
 
     @wrap_key_error
     def __call__(self, v):
+        v = v or ""
         return [self.text_to_id_(w) for w in v.split(',')]
 
 
@@ -684,6 +685,7 @@ class MDBInterfaceTransformer(BaseTransformer):
         return [0]
 
     def __call__(self, v):
+        v = v or ""
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
@@ -711,6 +713,7 @@ class MDBSubmodelTransformer(BaseTransformer):
         return [0]
 
     def __call__(self, v):
+        v = v or ""
         return sum([self.text_to_ids_(w) for w in v.split(',')], [])
 
 
@@ -735,6 +738,7 @@ class GPUModelTransformer(BaseTransformer):
         return 0
 
     def __call__(self, v):
+        v = v or ""
         return [self.text_to_id_(w) for w in v.split(',')]
 
 
