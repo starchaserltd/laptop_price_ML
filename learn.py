@@ -93,12 +93,22 @@ def load_data_csv(path: str) -> DataFrame:
     dataframe.fillna('', inplace=True)
     return dataframe
 
-
+QUERY_LIMIT=0
+SELECT_TYPE=0
 def load_data_sql() -> DataFrame:
+    global SELECT_TYPE
+    global QUERY_LIMIT
     with open('query.sql', 'r') as f:
         query = f.read()
     db_params = json.load(open('credentials.json', 'r')).get('database_r')
     sql_engine = create_sql_engine(**db_params)
+    
+    if(SELECT_TYPE>0):
+        query=query+" ORDER BY RAND() "
+    
+    if(QUERY_LIMIT>0):
+        query=query+" LIMIT "+str(QUERY_LIMIT)
+    
     dataframe = read_sql_query(
         query,
         sql_engine,
@@ -108,7 +118,7 @@ def load_data_sql() -> DataFrame:
 
 
 def select_targets(data_frame):
-    return np.array(data_frame.realprice).astype(np.float)
+    return np.array(data_frame.realprice).astype(float)
     # return np.array(data_frame.realprice - data_frame.price).astype(np.float)
 
 
@@ -308,7 +318,7 @@ class LaunchDateFeatures:
     def __call__(self, data_frame):
         c = data_frame[self.name_]
         d = (datetime.date.today() - c.dt.date).dt.days
-        d = np.array(d).astype(np.float)
+        d = np.array(d).astype(float)
         return np.atleast_2d(d).T
 
 
@@ -355,6 +365,7 @@ class ChassisMadeTransformer(BaseTransformer):
             "metal": "aluminium",
             "plastic": "plastic",
             "rubber": "rubber",
+            "titanium": "aluminium",
             "shock-absorbing ultra-polymer": "polymer",
             "steel reinforcements": "other",
         }
@@ -1152,6 +1163,8 @@ def load_classifier(path):
 
 
 def main():
+    global SELECT_TYPE
+    global QUERY_LIMIT
     parser = argparse.ArgumentParser(description='Learn a predictive function for price estimation.')
     parser.add_argument(
         '-t', '--todo',
@@ -1174,8 +1187,25 @@ def main():
         '-d', '--data',
         help='name of CSV data file',
     )
+    parser.add_argument(
+        '-ql', '--query-limit',
+        help='Maximum lines to select',
+        default=0,
+        type=int
+    )
+    parser.add_argument(
+        '-rand', '--random-select',
+        help='Random SQL selection',
+        default=0,
+        choices={0,1},
+        type=int
+    )
+
     args = parser.parse_args()
 
+    SELECT_TYPE=args.random_select
+    QUERY_LIMIT=args.query_limit
+    
     rm('/tmp/test_predictions.csv')
     classifier = GET_ESTIMATOR[args.estimator](SELECT_FEATURES[args.features])
 
