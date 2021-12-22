@@ -368,6 +368,7 @@ class ChassisMadeTransformer(BaseTransformer):
             "titanium": "aluminium",
             "shock-absorbing ultra-polymer": "polymer",
             "steel reinforcements": "other",
+            "fabric": "other",
         }
         self.values = sorted(list(set(self.text_to_value_.values())))
         self.value_to_id_ = {v: i for i, v in enumerate(self.values)}
