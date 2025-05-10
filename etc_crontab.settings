@@ -1,0 +1,3 @@
+#14 hours generation time start at 14 and ends at 4 am
+40 04 * * * root  reboot
+58 04 * * * root  /var/www/vault/genconf/noteb-price/train.sh > /tmp/train.log 2>&1
